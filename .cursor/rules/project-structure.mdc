@@ -1,0 +1,39 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Project Structure Guide
+
+This project is a Go logging library that provides both context-based and direct logging capabilities.
+
+## Main Components
+
+### Core Logger Package
+The main package is located in the `logger/` directory and contains the following key files:
+
+- [logger.go](mdc:logger/logger.go) - Core logger interface and main API functions
+- [context_logger.go](mdc:logger/context_logger.go) - Context-based logger implementation
+- [direct_logger.go](mdc:logger/direct_logger.go) - Direct logging implementation
+- [config.go](mdc:logger/config.go) - Configuration and initialization
+- [entry.go](mdc:logger/entry.go) - Log entry structure definitions
+- [middleware.go](mdc:logger/middleware.go) - Middleware interface and processing framework
+- [fields.go](mdc:logger/fields.go) - Common field keys and DataDog Standard Attributes
+- [context.go](mdc:logger/context.go) - Context helper functions
+
+### Formatters
+The `formatter/` directory contains different output format implementations:
+- [interface.go](mdc:logger/formatter/interface.go) - Formatter interface
+- [json_formatter.go](mdc:logger/formatter/json_formatter.go) - Standard JSON formatter
+- [datadog_formatter.go](mdc:logger/formatter/datadog_formatter.go) - DataDog-compliant formatter
+
+### HTTP Middleware
+Optional HTTP server middleware implementations are in the `http_middleware/` directory:
+- [middleware.go](mdc:logger/http_middleware/middleware.go)
+
+## Key Features
+- Dual-mode logging (context-based and direct)
+- Transparent context management
+- Simple API interface
+- Extensibility through middleware
+- DataDog Standard Attributes support

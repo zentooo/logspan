@@ -1,0 +1,78 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Log Format Guide
+
+## Default JSON Format (logone-go compliant)
+
+The default log output follows this structure:
+
+```json
+{
+  "type": "request",
+  "context": {
+    "REQUEST_ID": "xxxxxxx"
+  },
+  "runtime": {
+    "severity": "INFO",
+    "startTime": "2023-10-27T09:59:58.123456+09:00",
+    "endTime": "2023-10-27T10:00:00.223456+09:00",
+    "elapsed": 150,
+    "lines": [
+      {
+        "severity": "DEBUG",
+        "message": "invoked",
+        "time": "2023-10-27T09:59:59.123456+09:00",
+        "fileline": 19,
+        "funcname": "main.main",
+        "tags": ["critical", "debug_info"],
+        "attributes": {
+          "key": "value",
+          "process_id": 123
+        }
+      }
+    ],
+    "tags": {
+      "critical": 1,
+      "debug_info": 1
+    }
+  },
+  "config": {
+    "elapsedUnit": "ms"
+  }
+}
+```
+
+## Key Fields
+
+### Top Level
+- `type`: Log type (e.g., "request")
+- `context`: Common context information for the entire request
+- `runtime`: Runtime information for the request/processing unit
+- `config`: Logger configuration
+
+### Runtime Section
+- `severity`: Highest log level in this context
+- `startTime`: Processing start time (ISO8601)
+- `endTime`: Processing end time (ISO8601)
+- `elapsed`: Processing duration
+- `lines`: Array of individual log entries
+- `tags`: Aggregated tag counts
+
+### Log Entry (in lines array)
+- `severity`: Log level
+- `message`: Log message
+- `time`: Timestamp (ISO8601)
+- `fileline`: Source code line number
+- `funcname`: Function name
+- `tags`: Array of tags
+- `attributes`: Additional information
+
+## DataDog Standard Attributes
+
+When DataDog Standard Attributes are enabled, the log format changes to use standard field names like:
+- `timestamp`
+- `status`
+- `message`

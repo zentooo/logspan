@@ -1,0 +1,72 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# API Usage Guide
+
+## Initialization
+
+### Global Configuration
+```go
+// Initialize global logger settings
+logger.Init(config Config)
+```
+
+### Context Logger
+The context logger is automatically set up through HTTP middleware or similar mechanisms. No explicit initialization is required.
+
+## Logging Methods
+
+### Context Logger
+```go
+// Log with context
+logger.Infof(ctx context.Context, format string, args ...interface{})
+logger.Debugf(ctx context.Context, format string, args ...interface{})
+logger.Warnf(ctx context.Context, format string, args ...interface{})
+logger.Errorf(ctx context.Context, format string, args ...interface{})
+logger.Criticalf(ctx context.Context, format string, args ...interface{})
+```
+
+### Direct Logger
+```go
+// Direct logging without context
+logger.D.Infof(format string, args ...interface{})
+logger.D.Debugf(format string, args ...interface{})
+logger.D.Warnf(format string, args ...interface{})
+logger.D.Errorf(format string, args ...interface{})
+logger.D.Criticalf(format string, args ...interface{})
+```
+
+## Context Operations
+
+(add key/value to "context" of log entry)
+
+### Adding Fields
+```go
+// Add single field
+logger.AddField(ctx context.Context, key string, value interface{})
+
+// Add multiple fields
+logger.AddFields(ctx context.Context, fields map[string]interface{})
+```
+
+## Middleware
+
+### Adding Custom Middleware
+```go
+type Middleware func(entry *LogEntry, next func(*LogEntry))
+
+// Add middleware to the logging pipeline
+logger.AddMiddleware(yourMiddleware)
+```
+
+## DataDog Integration
+
+Enable DataDog Standard Attributes through configuration:
+```go
+config := logger.Config{
+    LogStyle: LogStyle.DataDogStandardAttribute // default: LogStyle.Default
+}
+logger.Init(config)
+```
