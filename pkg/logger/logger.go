@@ -89,7 +89,6 @@ func formatLogOutput(entries []*LogEntry, contextFields map[string]interface{}, 
 			Level:     entry.Level,
 			Message:   entry.Message,
 			Fields:    entry.Fields,
-			Tags:      entry.Tags,
 		}
 	}
 

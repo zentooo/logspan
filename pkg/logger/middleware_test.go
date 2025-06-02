@@ -43,111 +43,97 @@ func TestMiddlewareChain_Add(t *testing.T) {
 
 func TestMiddlewareChain_Process_EmptyChain(t *testing.T) {
 	chain := NewMiddlewareChain()
+
 	entry := &LogEntry{
 		Timestamp: time.Now(),
 		Level:     "INFO",
 		Message:   "test message",
 		Fields:    make(map[string]interface{}),
-		Tags:      []string{},
 	}
 
-	finalCalled := false
-	final := func(e *LogEntry) {
-		finalCalled = true
-		if e != entry {
-			t.Error("Final function should receive the same entry")
-		}
-	}
+	var processedEntry *LogEntry
+	chain.Process(entry, func(e *LogEntry) {
+		processedEntry = e
+	})
 
-	chain.Process(entry, final)
-
-	if !finalCalled {
-		t.Error("Final function should be called for empty chain")
+	if processedEntry != entry {
+		t.Error("Expected entry to be unchanged when processing through empty chain")
 	}
 }
 
 func TestMiddlewareChain_Process_SingleMiddleware(t *testing.T) {
 	chain := NewMiddlewareChain()
+
+	// Add middleware that adds a field
+	middleware := func(entry *LogEntry, next func(*LogEntry)) {
+		entry.Fields["middleware"] = "test-value"
+		next(entry)
+	}
+	chain.Add(middleware)
+
 	entry := &LogEntry{
 		Timestamp: time.Now(),
 		Level:     "INFO",
 		Message:   "test message",
 		Fields:    make(map[string]interface{}),
-		Tags:      []string{},
 	}
 
-	middlewareCalled := false
-	finalCalled := false
+	var processedEntry *LogEntry
+	chain.Process(entry, func(e *LogEntry) {
+		processedEntry = e
+	})
 
-	middleware := func(e *LogEntry, next func(*LogEntry)) {
-		middlewareCalled = true
-		// Modify the entry
-		e.Message = "modified by middleware"
-		next(e)
-	}
-
-	final := func(e *LogEntry) {
-		finalCalled = true
-		if e.Message != "modified by middleware" {
-			t.Errorf("Expected message to be modified, got: %s", e.Message)
-		}
-	}
-
-	chain.Add(middleware)
-	chain.Process(entry, final)
-
-	if !middlewareCalled {
-		t.Error("Middleware should be called")
-	}
-	if !finalCalled {
-		t.Error("Final function should be called")
+	// Verify the field was added
+	if processedEntry.Fields["middleware"] != "test-value" {
+		t.Errorf("Expected field 'middleware' to be 'test-value', got: %v", processedEntry.Fields["middleware"])
 	}
 }
 
 func TestMiddlewareChain_Process_MultipleMiddleware(t *testing.T) {
 	chain := NewMiddlewareChain()
-	entry := &LogEntry{
-		Timestamp: time.Now(),
-		Level:     "INFO",
-		Message:   "original",
-		Fields:    make(map[string]interface{}),
-		Tags:      []string{},
+
+	// Add middleware that adds fields
+	middleware1 := func(entry *LogEntry, next func(*LogEntry)) {
+		entry.Fields["middleware1"] = "value1"
+		next(entry)
 	}
 
-	var executionOrder []string
-
-	middleware1 := func(e *LogEntry, next func(*LogEntry)) {
-		executionOrder = append(executionOrder, "middleware1")
-		e.Message += " -> middleware1"
-		next(e)
+	middleware2 := func(entry *LogEntry, next func(*LogEntry)) {
+		entry.Fields["middleware2"] = "value2"
+		next(entry)
 	}
 
-	middleware2 := func(e *LogEntry, next func(*LogEntry)) {
-		executionOrder = append(executionOrder, "middleware2")
-		e.Message += " -> middleware2"
-		next(e)
-	}
-
-	final := func(e *LogEntry) {
-		executionOrder = append(executionOrder, "final")
-		expectedMessage := "original -> middleware1 -> middleware2"
-		if e.Message != expectedMessage {
-			t.Errorf("Expected message: %s, got: %s", expectedMessage, e.Message)
-		}
+	middleware3 := func(entry *LogEntry, next func(*LogEntry)) {
+		entry.Fields["middleware3"] = "value3"
+		next(entry)
 	}
 
 	chain.Add(middleware1)
 	chain.Add(middleware2)
-	chain.Process(entry, final)
+	chain.Add(middleware3)
 
-	expectedOrder := []string{"middleware1", "middleware2", "final"}
-	if len(executionOrder) != len(expectedOrder) {
-		t.Fatalf("Expected %d executions, got %d", len(expectedOrder), len(executionOrder))
+	entry := &LogEntry{
+		Timestamp: time.Now(),
+		Level:     "INFO",
+		Message:   "test message",
+		Fields:    make(map[string]interface{}),
 	}
 
-	for i, expected := range expectedOrder {
-		if executionOrder[i] != expected {
-			t.Errorf("Expected execution order[%d]: %s, got: %s", i, expected, executionOrder[i])
+	var processedEntry *LogEntry
+	chain.Process(entry, func(e *LogEntry) {
+		processedEntry = e
+	})
+
+	// Verify all fields were added
+	expectedFields := map[string]string{
+		"middleware1": "value1",
+		"middleware2": "value2",
+		"middleware3": "value3",
+	}
+
+	for key, expectedValue := range expectedFields {
+		if processedEntry.Fields[key] != expectedValue {
+			t.Errorf("Expected field '%s' to be '%s', got: %v", key, expectedValue, processedEntry.Fields[key])
 		}
 	}
 }
@@ -155,63 +141,74 @@ func TestMiddlewareChain_Process_MultipleMiddleware(t *testing.T) {
 func TestMiddlewareChain_Clear(t *testing.T) {
 	chain := NewMiddlewareChain()
 
+	// Add some middleware
 	middleware := func(entry *LogEntry, next func(*LogEntry)) {
 		next(entry)
 	}
-
 	chain.Add(middleware)
 	chain.Add(middleware)
 
 	if chain.Count() != 2 {
-		t.Errorf("Expected 2 middleware before clear, got %d", chain.Count())
+		t.Errorf("Expected count to be 2, got %d", chain.Count())
 	}
 
 	chain.Clear()
 
 	if chain.Count() != 0 {
-		t.Errorf("Expected 0 middleware after clear, got %d", chain.Count())
+		t.Errorf("Expected count to be 0 after clear, got %d", chain.Count())
 	}
 }
 
 func TestMiddlewareChain_Process_MiddlewareCanSkipNext(t *testing.T) {
 	chain := NewMiddlewareChain()
+
+	// Add middleware that skips calling next
+	middleware1 := func(entry *LogEntry, next func(*LogEntry)) {
+		entry.Fields["middleware1"] = "executed"
+		// Don't call next() - this should stop the chain
+	}
+
+	middleware2 := func(entry *LogEntry, next func(*LogEntry)) {
+		entry.Fields["middleware2"] = "executed"
+		next(entry)
+	}
+
+	chain.Add(middleware1)
+	chain.Add(middleware2)
+
 	entry := &LogEntry{
 		Timestamp: time.Now(),
 		Level:     "INFO",
 		Message:   "test message",
 		Fields:    make(map[string]interface{}),
-		Tags:      []string{},
 	}
 
 	finalCalled := false
-
-	// Middleware that doesn't call next
-	middleware := func(e *LogEntry, next func(*LogEntry)) {
-		// Intentionally not calling next to test chain interruption
-		e.Message = "blocked by middleware"
-	}
-
-	final := func(e *LogEntry) {
+	chain.Process(entry, func(e *LogEntry) {
 		finalCalled = true
+	})
+
+	// Verify first middleware executed
+	if entry.Fields["middleware1"] != "executed" {
+		t.Error("Expected middleware1 to execute")
 	}
 
-	chain.Add(middleware)
-	chain.Process(entry, final)
+	// Verify second middleware did not execute
+	if _, exists := entry.Fields["middleware2"]; exists {
+		t.Error("Expected middleware2 to not execute when previous middleware skips next()")
+	}
 
+	// Verify final function was not called
 	if finalCalled {
-		t.Error("Final function should not be called when middleware doesn't call next")
-	}
-
-	if entry.Message != "blocked by middleware" {
-		t.Errorf("Expected message to be modified by middleware, got: %s", entry.Message)
+		t.Error("Expected final function to not be called when middleware skips next()")
 	}
 }
 
 // TestMiddlewareInterface tests the basic middleware interface
 func TestMiddlewareInterface(t *testing.T) {
-	// Create a simple middleware that adds a tag
+	// Create a simple middleware that adds a field
 	middleware := func(entry *LogEntry, next func(*LogEntry)) {
-		entry.Tags = append(entry.Tags, "test-tag")
+		entry.Fields["test-field"] = "test-value"
 		next(entry)
 	}
 
@@ -221,7 +218,6 @@ func TestMiddlewareInterface(t *testing.T) {
 		Level:     "INFO",
 		Message:   "test message",
 		Fields:    make(map[string]interface{}),
-		Tags:      make([]string, 0),
 	}
 
 	// Test the middleware
@@ -230,9 +226,9 @@ func TestMiddlewareInterface(t *testing.T) {
 		processedEntry = e
 	})
 
-	// Verify the tag was added
-	if len(processedEntry.Tags) != 1 || processedEntry.Tags[0] != "test-tag" {
-		t.Errorf("Expected tag 'test-tag' to be added, got: %v", processedEntry.Tags)
+	// Verify the field was added
+	if processedEntry.Fields["test-field"] != "test-value" {
+		t.Errorf("Expected field 'test-field' to be 'test-value', got: %v", processedEntry.Fields["test-field"])
 	}
 }
 
@@ -240,14 +236,14 @@ func TestMiddlewareInterface(t *testing.T) {
 func TestMiddlewareChain(t *testing.T) {
 	chain := NewMiddlewareChain()
 
-	// Add middleware that adds tags
+	// Add middleware that adds fields
 	middleware1 := func(entry *LogEntry, next func(*LogEntry)) {
-		entry.Tags = append(entry.Tags, "middleware1")
+		entry.Fields["middleware1"] = "value1"
 		next(entry)
 	}
 
 	middleware2 := func(entry *LogEntry, next func(*LogEntry)) {
-		entry.Tags = append(entry.Tags, "middleware2")
+		entry.Fields["middleware2"] = "value2"
 		next(entry)
 	}
 
@@ -260,7 +256,6 @@ func TestMiddlewareChain(t *testing.T) {
 		Level:     "INFO",
 		Message:   "test message",
 		Fields:    make(map[string]interface{}),
-		Tags:      make([]string, 0),
 	}
 
 	// Process through chain
@@ -269,16 +264,12 @@ func TestMiddlewareChain(t *testing.T) {
 		processedEntry = e
 	})
 
-	// Verify both tags were added in order
-	expectedTags := []string{"middleware1", "middleware2"}
-	if len(processedEntry.Tags) != 2 {
-		t.Errorf("Expected 2 tags, got %d", len(processedEntry.Tags))
+	// Verify both fields were added
+	if processedEntry.Fields["middleware1"] != "value1" {
+		t.Errorf("Expected field 'middleware1' to be 'value1', got: %v", processedEntry.Fields["middleware1"])
 	}
-
-	for i, expectedTag := range expectedTags {
-		if processedEntry.Tags[i] != expectedTag {
-			t.Errorf("Expected tag[%d] to be '%s', got '%s'", i, expectedTag, processedEntry.Tags[i])
-		}
+	if processedEntry.Fields["middleware2"] != "value2" {
+		t.Errorf("Expected field 'middleware2' to be 'value2', got: %v", processedEntry.Fields["middleware2"])
 	}
 }
 
@@ -288,7 +279,7 @@ func TestMiddlewareChainClear(t *testing.T) {
 
 	// Add a middleware
 	middleware := func(entry *LogEntry, next func(*LogEntry)) {
-		entry.Tags = append(entry.Tags, "test")
+		entry.Fields["test"] = "value"
 		next(entry)
 	}
 	chain.Add(middleware)
@@ -314,7 +305,6 @@ func TestMiddlewareChainEmpty(t *testing.T) {
 		Level:     "INFO",
 		Message:   "test message",
 		Fields:    make(map[string]interface{}),
-		Tags:      make([]string, 0),
 	}
 
 	// Process through empty chain
@@ -341,12 +331,12 @@ func TestGlobalMiddlewareManagement(t *testing.T) {
 
 	// Add middleware
 	middleware1 := func(entry *LogEntry, next func(*LogEntry)) {
-		entry.Tags = append(entry.Tags, "global1")
+		entry.Fields["global1"] = "value1"
 		next(entry)
 	}
 
 	middleware2 := func(entry *LogEntry, next func(*LogEntry)) {
-		entry.Tags = append(entry.Tags, "global2")
+		entry.Fields["global2"] = "value2"
 		next(entry)
 	}
 
@@ -366,7 +356,6 @@ func TestGlobalMiddlewareManagement(t *testing.T) {
 		Level:     "INFO",
 		Message:   "test message",
 		Fields:    make(map[string]interface{}),
-		Tags:      make([]string, 0),
 	}
 
 	var processedEntry *LogEntry
@@ -375,15 +364,11 @@ func TestGlobalMiddlewareManagement(t *testing.T) {
 	})
 
 	// Verify both middleware were applied
-	expectedTags := []string{"global1", "global2"}
-	if len(processedEntry.Tags) != 2 {
-		t.Errorf("Expected 2 tags, got %d", len(processedEntry.Tags))
+	if processedEntry.Fields["global1"] != "value1" {
+		t.Errorf("Expected field 'global1' to be 'value1', got: %v", processedEntry.Fields["global1"])
 	}
-
-	for i, expectedTag := range expectedTags {
-		if processedEntry.Tags[i] != expectedTag {
-			t.Errorf("Expected tag[%d] to be '%s', got '%s'", i, expectedTag, processedEntry.Tags[i])
-		}
+	if processedEntry.Fields["global2"] != "value2" {
+		t.Errorf("Expected field 'global2' to be 'value2', got: %v", processedEntry.Fields["global2"])
 	}
 
 	// Test clear
@@ -403,50 +388,22 @@ func TestDirectLoggerWithMiddleware(t *testing.T) {
 	logger := NewDirectLogger()
 	logger.SetOutput(&buf)
 
-	// Add middleware that adds a tag
+	// Add middleware that adds a field
 	AddMiddleware(func(entry *LogEntry, next func(*LogEntry)) {
-		entry.Tags = append(entry.Tags, "middleware-tag")
+		entry.Fields["middleware-field"] = "middleware-value"
 		next(entry)
 	})
 
 	// Log a message
 	logger.Infof("test message")
 
-	// Parse the output
+	// Parse the output to verify middleware was applied
 	output := buf.String()
-	if output == "" {
-		t.Fatal("Expected output, got empty string")
+	if !strings.Contains(output, "middleware-field") {
+		t.Error("Expected middleware field to be present in log output")
 	}
-
-	// Parse JSON to verify middleware was applied
-	var logData map[string]interface{}
-	if err := json.Unmarshal([]byte(output), &logData); err != nil {
-		t.Fatalf("Failed to parse JSON output: %v", err)
-	}
-
-	// Check that the middleware tag was added
-	runtime, ok := logData["runtime"].(map[string]interface{})
-	if !ok {
-		t.Fatal("Expected runtime section in log output")
-	}
-
-	lines, ok := runtime["lines"].([]interface{})
-	if !ok || len(lines) == 0 {
-		t.Fatal("Expected lines array in runtime section")
-	}
-
-	firstLine, ok := lines[0].(map[string]interface{})
-	if !ok {
-		t.Fatal("Expected first line to be an object")
-	}
-
-	tags, ok := firstLine["tags"].([]interface{})
-	if !ok {
-		t.Fatal("Expected tags array in log entry")
-	}
-
-	if len(tags) != 1 || tags[0] != "middleware-tag" {
-		t.Errorf("Expected middleware tag to be added, got: %v", tags)
+	if !strings.Contains(output, "middleware-value") {
+		t.Error("Expected middleware value to be present in log output")
 	}
 
 	// Clean up

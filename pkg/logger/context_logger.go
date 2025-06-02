@@ -75,7 +75,6 @@ func (l *ContextLogger) addEntry(level LogLevel, message string) {
 		Level:     level.String(),
 		Message:   message,
 		Fields:    make(map[string]interface{}),
-		Tags:      make([]string, 0),
 	}
 
 	// Copy context fields to the entry

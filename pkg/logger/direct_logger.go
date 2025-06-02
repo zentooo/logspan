@@ -87,7 +87,6 @@ func (l *DirectLogger) log(level LogLevel, format string, args ...interface{}) {
 		Level:     level.String(),
 		Message:   fmt.Sprintf(format, args...),
 		Fields:    make(map[string]interface{}),
-		Tags:      make([]string, 0),
 	}
 
 	// Process through global middleware chain

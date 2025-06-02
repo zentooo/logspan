@@ -63,11 +63,6 @@ func (f *DataDogFormatter) convertToDataDogFormat(output *LogOutput) interface{}
 				"logger":    "logspan",
 			}
 
-			// Add tags if present
-			if len(entry.Tags) > 0 {
-				line["tags"] = entry.Tags
-			}
-
 			// Add custom fields
 			for k, v := range entry.Fields {
 				line[k] = v

@@ -326,7 +326,6 @@ func TestPasswordMaskingMiddleware_Middleware(t *testing.T) {
 			"password": "secret123",
 			"api_key":  "abc123",
 		},
-		Tags: []string{"auth"},
 	}
 
 	var processedEntry *LogEntry
@@ -369,7 +368,6 @@ func TestPasswordMaskingMiddleware_CustomMaskString(t *testing.T) {
 		Fields: map[string]interface{}{
 			"password": "secret123",
 		},
-		Tags: []string{},
 	}
 
 	var processedEntry *LogEntry
@@ -398,7 +396,6 @@ func TestPasswordMaskingMiddleware_NilFields(t *testing.T) {
 		Level:     "INFO",
 		Message:   "password=secret123",
 		Fields:    nil,
-		Tags:      []string{},
 	}
 
 	var processedEntry *LogEntry

@@ -10,7 +10,6 @@ type LogEntry struct {
 	Level     string                 `json:"level"`
 	Message   string                 `json:"message"`
 	Fields    map[string]interface{} `json:"fields"`
-	Tags      []string               `json:"tags"`
 }
 
 // LogOutput represents the complete log output structure
