@@ -1,48 +1,82 @@
-# AddField関数の動作変更とリネーム
-
-## タスク概要
-現在のAddField関数は、LogEntryとcontextの両方にフィールドを追加しているが、contextのみに追加するように変更し、関数名をAddContextValueに変更する。
-
-## 進め方
-1. 現在の実装を詳細に調査
-2. 変更が必要なファイルを特定
-3. 段階的に変更を実施
-4. テストを実行して動作確認
-
 ## サブタスク
 
-### 1. 現在の実装調査
-- [x] 1-1. AddField関数の実装詳細を確認
-  - `pkg/logger/context.go`の`AddField`関数：contextからloggerを取得し、`logger.AddField`を呼び出す
-  - `pkg/logger/context_logger.go`の`AddField`関数：`l.fields[key] = value`でcontextフィールドに追加
-  - `addEntry`関数内で`l.fields`の内容を`entry.Fields`にコピーしている（74-76行目）
-- [x] 1-2. LogEntryにフィールドが追加される箇所を特定
-  - `pkg/logger/context_logger.go:81` - `addEntry`関数内でcontextフィールドをLogEntryにコピー
-  - `pkg/logger/direct_logger.go:88` - DirectLoggerでLogEntry作成時に空のFieldsを初期化
-  - ミドルウェア内でentry.Fields[key] = valueの形で直接追加される箇所が多数
-- [x] 1-3. contextにフィールドが追加される箇所を特定
-  - `pkg/logger/context_logger.go:94` - AddField関数内
-  - `pkg/logger/context_logger.go:102` - AddFields関数内
-- [x] 1-4. 影響範囲を調査（テスト、ドキュメント等）
-  - **使用箇所**: examples/, pkg/http_middleware/, テストファイル多数
-  - **ドキュメント**: README.md, design.md, .cursor/rules/api-usage.mdc
-  - **主要な変更対象**:
-    - 関数名変更: AddField → AddContextValue, AddFields → AddContextValues
-    - 動作変更: LogEntryへのフィールドコピーを停止
+### 1. 現在の examples 構造の確認
+- [x] 1.1 examples ディレクトリの構造を確認
+- [x] 1.2 既存の例（context_logger, direct_logger）の実装パターンを確認
+- [x] 1.3 DataDog formatter の実装を確認
 
-### 2. 実装変更
-- [x] 2-1. ContextLoggerのaddEntry関数を修正（contextフィールドをLogEntryにコピーしないように）
-- [x] 2-2. AddField関数をAddContextValueに名前変更
-- [x] 2-3. AddFields関数をAddContextValuesに名前変更（一貫性のため）
+### 2. DataDog formatter example の作成
+- [x] 2.1 examples/datadog_formatter/ ディレクトリを作成
+- [x] 2.2 main.go ファイルを作成（context logger + DataDog formatter）
+- [x] 2.3 README.md ファイルを作成（使用方法の説明）
 
-### 3. テスト修正
-- [ ] 3-1. 関連するテストケースを修正
-- [ ] 3-2. 新しい動作に合わせてテスト期待値を更新
+### 3. 既存例の拡張
+- [x] 3.1 context_logger/main.go にDataDog formatterの使用例を追加
+- [x] 3.2 direct_logger/main.go にDataDog formatterの使用例を追加
 
 ### 4. ドキュメント更新
-- [ ] 4-1. README.mdの更新
-- [ ] 4-2. API使用ガイドの更新
+- [x] 4.1 examples/README.md を更新してDataDog formatter例を追加
 
-### 5. 動作確認
-- [ ] 5-1. 全テストの実行
-- [ ] 5-2. 実際の動作確認
+## 進捗状況
+- 開始日時: 2024年12月19日
+- 完了日時: 2024年12月19日
+- 状態: **完了**
+
+## 完了したタスクの詳細
+### 1.1 examples ディレクトリの構造確認
+- examples/ ディレクトリには README.md, http_middleware_example.go, context_logger/, direct_logger/ が存在
+- 各サブディレクトリには main.go ファイルが配置されている
+
+### 1.2 既存例の実装パターン確認
+- context_logger: コンテキストベースでログを蓄積し、FlushContextで一括出力
+- direct_logger: 即座にログを出力、レベル設定のテスト機能付き
+
+### 1.3 DataDog formatter実装確認
+- pkg/formatter/datadog_formatter.go に実装済み
+- DataDog Standard Attributes形式（timestamp, status, message, logger, duration）
+- インデント付きフォーマットもサポート
+
+### 2.1 examples/datadog_formatter/ ディレクトリ作成
+- 新しいサンプル用のディレクトリを作成
+
+### 2.2 main.go ファイル作成
+- DataDog formatterを使用したcontext loggerの例を実装
+- 標準JSON形式との比較も含む
+- リクエスト処理のシミュレーション機能付き
+
+### 2.3 README.md ファイル作成
+- DataDog formatter使用方法の詳細説明
+- 出力例とコードのポイントを記載
+- DataDogでの活用方法も説明
+
+### 3.1 context_logger/main.go 拡張
+- 既存のcontext logger例にDataDog formatterセクションを追加
+- formatter パッケージのimportを追加
+- DataDog形式での出力例を実装
+
+### 3.2 direct_logger/main.go 拡張
+- 既存のdirect logger例にDataDog formatterセクションを追加
+- 各ログレベルでのDataDog形式出力テストを実装
+
+### 4.1 examples/README.md 更新
+- DataDog formatter exampleの説明を追加
+- ディレクトリ構造を更新
+- フォーマッター説明セクションを追加
+
+## 成果物
+1. **新規作成**:
+   - `examples/datadog_formatter/main.go` - DataDog formatter専用サンプル
+   - `examples/datadog_formatter/README.md` - 詳細な使用方法説明
+
+2. **既存ファイル拡張**:
+   - `examples/context_logger/main.go` - DataDog formatter使用例追加
+   - `examples/direct_logger/main.go` - DataDog formatter使用例追加
+   - `examples/README.md` - DataDog formatter例の説明追加
+
+## 実行確認
+各サンプルは以下のコマンドで実行可能：
+```bash
+go run examples/datadog_formatter/main.go
+go run examples/context_logger/main.go
+go run examples/direct_logger/main.go
+```
