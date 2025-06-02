@@ -4,9 +4,9 @@ import "time"
 
 // LogEntry represents a single log entry
 type LogEntry struct {
-	Timestamp time.Time
-	Level     string
-	Message   string
-	Fields    map[string]interface{}
-	Tags      []string
+	Timestamp time.Time              `json:"timestamp"`
+	Level     string                 `json:"level"`
+	Message   string                 `json:"message"`
+	Fields    map[string]interface{} `json:"fields"`
+	Tags      []string               `json:"tags"`
 }

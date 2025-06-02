@@ -2,10 +2,10 @@ package logger
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestDirectLogger_BasicLogging(t *testing.T) {
@@ -49,9 +49,46 @@ func TestDirectLogger_BasicLogging(t *testing.T) {
 				return
 			}
 
-			// ログレベルが含まれていることを確認
-			if !strings.Contains(output, tc.level) {
-				t.Errorf("Expected output to contain level %s, got: %s", tc.level, output)
+			// JSONとしてパースできることを確認
+			var logData map[string]interface{}
+			if err := json.Unmarshal([]byte(output), &logData); err != nil {
+				t.Errorf("Expected valid JSON output, got error: %v, output: %s", err, output)
+				return
+			}
+
+			// 構造化ログの基本構造を確認
+			if logData["type"] != "request" {
+				t.Errorf("Expected type 'request', got: %v", logData["type"])
+			}
+
+			runtime, ok := logData["runtime"].(map[string]interface{})
+			if !ok {
+				t.Error("Expected runtime section in log output")
+				return
+			}
+
+			// severityが正しいことを確認
+			if runtime["severity"] != tc.level {
+				t.Errorf("Expected severity %s, got: %v", tc.level, runtime["severity"])
+			}
+
+			// linesが配列で1つのエントリを持つことを確認
+			lines, ok := runtime["lines"].([]interface{})
+			if !ok {
+				t.Error("Expected lines to be an array")
+				return
+			}
+
+			if len(lines) != 1 {
+				t.Errorf("Expected exactly 1 log entry, got %d", len(lines))
+				return
+			}
+
+			// ログエントリの内容を確認
+			entry, ok := lines[0].(map[string]interface{})
+			if !ok {
+				t.Error("Expected log entry to be an object")
+				return
 			}
 
 			// メッセージが含まれていることを確認
@@ -59,13 +96,13 @@ func TestDirectLogger_BasicLogging(t *testing.T) {
 			if tc.args != nil {
 				expectedMessage = "message with string and 42"
 			}
-			if !strings.Contains(output, expectedMessage) {
-				t.Errorf("Expected output to contain message %s, got: %s", expectedMessage, output)
+			if entry["message"] != expectedMessage {
+				t.Errorf("Expected message %s, got: %v", expectedMessage, entry["message"])
 			}
 
-			// タイムスタンプが含まれていることを確認（RFC3339形式）
-			if !strings.Contains(output, time.Now().Format("2006-01-02")) {
-				t.Errorf("Expected output to contain timestamp, got: %s", output)
+			// レベルが含まれていることを確認
+			if entry["level"] != tc.level {
+				t.Errorf("Expected level %s, got: %v", tc.level, entry["level"])
 			}
 		})
 	}
@@ -107,9 +144,22 @@ func TestDirectLogger_LevelFiltering(t *testing.T) {
 				if output == "" {
 					t.Errorf("Expected log output for level %s with min level %s, got empty string",
 						tc.logLevel.String(), tc.setLevel.String())
+					return
 				}
-				if !strings.Contains(output, tc.message) {
-					t.Errorf("Expected output to contain message %s, got: %s", tc.message, output)
+
+				// JSONとしてパースできることを確認
+				var logData map[string]interface{}
+				if err := json.Unmarshal([]byte(output), &logData); err != nil {
+					t.Errorf("Expected valid JSON output, got error: %v", err)
+					return
+				}
+
+				// メッセージが含まれていることを確認
+				runtime := logData["runtime"].(map[string]interface{})
+				lines := runtime["lines"].([]interface{})
+				entry := lines[0].(map[string]interface{})
+				if entry["message"] != tc.message {
+					t.Errorf("Expected message %s, got: %v", tc.message, entry["message"])
 				}
 			} else {
 				if output != "" {
@@ -172,8 +222,18 @@ func TestDirectLogger_SetOutput(t *testing.T) {
 	if buf1.String() == "" {
 		t.Error("Expected output in buffer 1, got empty string")
 	}
-	if !strings.Contains(buf1.String(), "message to buffer 1") {
-		t.Errorf("Expected buffer 1 to contain message, got: %s", buf1.String())
+
+	// JSONとしてパースできることを確認
+	var logData1 map[string]interface{}
+	if err := json.Unmarshal([]byte(buf1.String()), &logData1); err != nil {
+		t.Errorf("Expected valid JSON output in buffer 1, got error: %v", err)
+	} else {
+		runtime := logData1["runtime"].(map[string]interface{})
+		lines := runtime["lines"].([]interface{})
+		entry := lines[0].(map[string]interface{})
+		if entry["message"] != "message to buffer 1" {
+			t.Errorf("Expected buffer 1 to contain message, got: %v", entry["message"])
+		}
 	}
 
 	// 2番目のバッファに切り替え
@@ -190,8 +250,18 @@ func TestDirectLogger_SetOutput(t *testing.T) {
 	if buf2.String() == "" {
 		t.Error("Expected output in buffer 2, got empty string")
 	}
-	if !strings.Contains(buf2.String(), "message to buffer 2") {
-		t.Errorf("Expected buffer 2 to contain message, got: %s", buf2.String())
+
+	// JSONとしてパースできることを確認
+	var logData2 map[string]interface{}
+	if err := json.Unmarshal([]byte(buf2.String()), &logData2); err != nil {
+		t.Errorf("Expected valid JSON output in buffer 2, got error: %v", err)
+	} else {
+		runtime := logData2["runtime"].(map[string]interface{})
+		lines := runtime["lines"].([]interface{})
+		entry := lines[0].(map[string]interface{})
+		if entry["message"] != "message to buffer 2" {
+			t.Errorf("Expected buffer 2 to contain message, got: %v", entry["message"])
+		}
 	}
 }
 
@@ -230,19 +300,43 @@ func TestDirectLogger_ConcurrentSafety(t *testing.T) {
 		return
 	}
 
-	// 期待される総メッセージ数を確認
+	// 期待される総メッセージ数を確認（各ログエントリは1行のJSONなので改行で分割）
+	lines := strings.Split(strings.TrimSpace(output), "\n")
 	expectedMessages := numGoroutines * messagesPerGoroutine
-	actualMessages := strings.Count(output, "goroutine")
 
-	if actualMessages != expectedMessages {
-		t.Errorf("Expected %d messages, got %d", expectedMessages, actualMessages)
+	if len(lines) != expectedMessages {
+		t.Errorf("Expected %d messages, got %d", expectedMessages, len(lines))
 	}
 
-	// 各goroutineからのメッセージが含まれていることを確認
+	// 各行がJSONとしてパースできることを確認
+	messageCount := make(map[int]int)
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		var logData map[string]interface{}
+		if err := json.Unmarshal([]byte(line), &logData); err != nil {
+			t.Errorf("Expected valid JSON output, got error: %v, line: %s", err, line)
+			continue
+		}
+
+		runtime := logData["runtime"].(map[string]interface{})
+		linesArray := runtime["lines"].([]interface{})
+		entry := linesArray[0].(map[string]interface{})
+		message := entry["message"].(string)
+
+		// goroutine IDを抽出
+		var goroutineID int
+		if _, err := fmt.Sscanf(message, "goroutine %d", &goroutineID); err == nil {
+			messageCount[goroutineID]++
+		}
+	}
+
+	// 各goroutineからの期待されるメッセージ数を確認
 	for i := 0; i < numGoroutines; i++ {
-		expectedPattern := fmt.Sprintf("goroutine %d", i)
-		if !strings.Contains(output, expectedPattern) {
-			t.Errorf("Expected output to contain messages from goroutine %d", i)
+		if messageCount[i] != messagesPerGoroutine {
+			t.Errorf("Expected %d messages from goroutine %d, got %d", messagesPerGoroutine, i, messageCount[i])
 		}
 	}
 }
@@ -285,4 +379,58 @@ func TestDirectLogger_ErrorCases(t *testing.T) {
 			t.Error("Info message should be output with default INFO level")
 		}
 	})
+}
+
+func TestDirectLogger_StructuredOutput(t *testing.T) {
+	var buf bytes.Buffer
+	logger := NewDirectLogger()
+	logger.SetOutput(&buf)
+
+	logger.Infof("test message")
+	output := buf.String()
+
+	// JSONとしてパースできることを確認
+	var logData map[string]interface{}
+	if err := json.Unmarshal([]byte(output), &logData); err != nil {
+		t.Errorf("Expected valid JSON output, got error: %v, output: %s", err, output)
+		return
+	}
+
+	// 構造化ログの必須フィールドを確認
+	expectedFields := []string{"type", "context", "runtime", "config"}
+	for _, field := range expectedFields {
+		if _, exists := logData[field]; !exists {
+			t.Errorf("Expected field %s in log output", field)
+		}
+	}
+
+	// runtime セクションの詳細確認
+	runtime, ok := logData["runtime"].(map[string]interface{})
+	if !ok {
+		t.Error("Expected runtime to be an object")
+		return
+	}
+
+	expectedRuntimeFields := []string{"severity", "startTime", "endTime", "elapsed", "lines"}
+	for _, field := range expectedRuntimeFields {
+		if _, exists := runtime[field]; !exists {
+			t.Errorf("Expected field %s in runtime section", field)
+		}
+	}
+
+	// elapsed が 0 であることを確認（direct loggerの場合）
+	if runtime["elapsed"] != float64(0) {
+		t.Errorf("Expected elapsed to be 0 for direct logger, got: %v", runtime["elapsed"])
+	}
+
+	// lines が配列で1つのエントリを持つことを確認
+	lines, ok := runtime["lines"].([]interface{})
+	if !ok {
+		t.Error("Expected lines to be an array")
+		return
+	}
+
+	if len(lines) != 1 {
+		t.Errorf("Expected exactly 1 log entry, got %d", len(lines))
+	}
 }

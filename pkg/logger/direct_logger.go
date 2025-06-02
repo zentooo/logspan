@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -47,7 +48,7 @@ func (l *DirectLogger) isLevelEnabled(level LogLevel) bool {
 	return level >= l.minLevel
 }
 
-// log writes a log entry with the given level and message
+// log writes a log entry with the given level and message in structured format
 func (l *DirectLogger) log(level LogLevel, format string, args ...interface{}) {
 	if !l.isLevelEnabled(level) {
 		return
@@ -61,14 +62,40 @@ func (l *DirectLogger) log(level LogLevel, format string, args ...interface{}) {
 		return
 	}
 
+	now := time.Now()
 	entry := &LogEntry{
-		Timestamp: time.Now(),
+		Timestamp: now,
 		Level:     level.String(),
 		Message:   fmt.Sprintf(format, args...),
+		Fields:    make(map[string]interface{}),
+		Tags:      make([]string, 0),
 	}
 
-	// TODO: Add formatter support
-	fmt.Fprintf(l.output, "[%s] %s: %s\n", entry.Timestamp.Format(time.RFC3339), entry.Level, entry.Message)
+	// Create structured log output similar to context logger
+	output := map[string]interface{}{
+		"type":    "request",
+		"context": map[string]interface{}{},
+		"runtime": map[string]interface{}{
+			"severity":  level.String(),
+			"startTime": now.Format(time.RFC3339Nano),
+			"endTime":   now.Format(time.RFC3339Nano),
+			"elapsed":   0, // Direct log has no elapsed time
+			"lines":     []*LogEntry{entry},
+		},
+		"config": map[string]interface{}{
+			"elapsedUnit": "ms",
+		},
+	}
+
+	// Convert to JSON
+	jsonData, err := json.Marshal(output)
+	if err != nil {
+		// Fallback to simple output if JSON marshaling fails
+		fmt.Fprintf(l.output, "Error marshaling log: %v\n", err)
+		return
+	}
+
+	fmt.Fprintf(l.output, "%s\n", jsonData)
 }
 
 // Debugf logs a debug message
