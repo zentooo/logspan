@@ -23,13 +23,22 @@ type ContextLogger struct {
 
 // NewContextLogger creates a new ContextLogger instance
 func NewContextLogger() *ContextLogger {
+	// Get global config to determine formatter settings
+	config := GetConfig()
+	var jsonFormatter formatter.Formatter
+	if config.PrettifyJSON {
+		jsonFormatter = formatter.NewJSONFormatterWithIndent("  ")
+	} else {
+		jsonFormatter = formatter.NewJSONFormatter()
+	}
+
 	return &ContextLogger{
 		entries:   make([]*LogEntry, 0),
 		fields:    make(map[string]interface{}),
 		startTime: time.Now(),
 		output:    os.Stdout,
 		minLevel:  InfoLevel,
-		formatter: formatter.NewJSONFormatter(), // Default to JSON formatter
+		formatter: jsonFormatter,
 	}
 }
 

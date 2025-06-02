@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"encoding/json"
 	"sync"
 	"time"
 
@@ -70,7 +69,7 @@ func processWithGlobalMiddleware(entry *LogEntry, final func(*LogEntry)) {
 var D Logger = NewDirectLogger()
 
 // formatLogOutput creates a LogOutput structure and formats it using the given formatter
-// If formatter is nil, returns JSON bytes directly
+// If formatter is nil, uses default JSONFormatter
 func formatLogOutput(entries []*LogEntry, contextFields map[string]interface{}, startTime, endTime time.Time, f formatter.Formatter) ([]byte, error) {
 	elapsed := endTime.Sub(startTime).Milliseconds()
 
@@ -110,49 +109,18 @@ func formatLogOutput(entries []*LogEntry, contextFields map[string]interface{}, 
 		},
 	}
 
-	// Use formatter if provided
-	if f != nil {
-		return f.Format(logOutput)
-	}
-
-	// Fallback to default JSON formatting
-	return defaultJSONFormat(logOutput)
-}
-
-// defaultJSONFormat provides the default JSON formatting as fallback
-func defaultJSONFormat(logOutput *formatter.LogOutput) ([]byte, error) {
-	// This matches the original format used by ContextLogger
-	output := map[string]interface{}{
-		"type":    logOutput.Type,
-		"context": logOutput.Context,
-		"runtime": map[string]interface{}{
-			"severity":  logOutput.Runtime.Severity,
-			"startTime": logOutput.Runtime.StartTime,
-			"endTime":   logOutput.Runtime.EndTime,
-			"elapsed":   logOutput.Runtime.Elapsed,
-			"lines":     convertFormatterEntriesToLogEntries(logOutput.Runtime.Lines),
-		},
-		"config": map[string]interface{}{
-			"elapsedUnit": logOutput.Config.ElapsedUnit,
-		},
-	}
-
-	return json.Marshal(output)
-}
-
-// convertFormatterEntriesToLogEntries converts formatter.LogEntry back to logger.LogEntry for JSON marshaling
-func convertFormatterEntriesToLogEntries(formatterEntries []*formatter.LogEntry) []*LogEntry {
-	entries := make([]*LogEntry, len(formatterEntries))
-	for i, entry := range formatterEntries {
-		entries[i] = &LogEntry{
-			Timestamp: entry.Timestamp,
-			Level:     entry.Level,
-			Message:   entry.Message,
-			Fields:    entry.Fields,
-			Tags:      entry.Tags,
+	// Use provided formatter or default JSONFormatter
+	if f == nil {
+		// Use default JSONFormatter with prettify setting from global config
+		config := GetConfig()
+		if config.PrettifyJSON {
+			f = formatter.NewJSONFormatterWithIndent("  ")
+		} else {
+			f = formatter.NewJSONFormatter()
 		}
 	}
-	return entries
+
+	return f.Format(logOutput)
 }
 
 // isHigherSeverity compares two severity levels
