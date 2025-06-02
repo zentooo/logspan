@@ -71,7 +71,10 @@ func (l *ContextLogger) addEntry(level LogLevel, message string) {
 		entry.Fields[k] = v
 	}
 
-	l.entries = append(l.entries, entry)
+	// Process through global middleware chain
+	processWithGlobalMiddleware(entry, func(processedEntry *LogEntry) {
+		l.entries = append(l.entries, processedEntry)
+	})
 }
 
 // AddField adds a field to the context

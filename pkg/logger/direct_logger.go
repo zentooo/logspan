@@ -71,31 +71,34 @@ func (l *DirectLogger) log(level LogLevel, format string, args ...interface{}) {
 		Tags:      make([]string, 0),
 	}
 
-	// Create structured log output similar to context logger
-	output := map[string]interface{}{
-		"type":    "request",
-		"context": map[string]interface{}{},
-		"runtime": map[string]interface{}{
-			"severity":  level.String(),
-			"startTime": now.Format(time.RFC3339Nano),
-			"endTime":   now.Format(time.RFC3339Nano),
-			"elapsed":   0, // Direct log has no elapsed time
-			"lines":     []*LogEntry{entry},
-		},
-		"config": map[string]interface{}{
-			"elapsedUnit": "ms",
-		},
-	}
+	// Process through global middleware chain
+	processWithGlobalMiddleware(entry, func(processedEntry *LogEntry) {
+		// Create structured log output similar to context logger
+		output := map[string]interface{}{
+			"type":    "request",
+			"context": map[string]interface{}{},
+			"runtime": map[string]interface{}{
+				"severity":  processedEntry.Level,
+				"startTime": processedEntry.Timestamp.Format(time.RFC3339Nano),
+				"endTime":   processedEntry.Timestamp.Format(time.RFC3339Nano),
+				"elapsed":   0, // Direct log has no elapsed time
+				"lines":     []*LogEntry{processedEntry},
+			},
+			"config": map[string]interface{}{
+				"elapsedUnit": "ms",
+			},
+		}
 
-	// Convert to JSON
-	jsonData, err := json.Marshal(output)
-	if err != nil {
-		// Fallback to simple output if JSON marshaling fails
-		fmt.Fprintf(l.output, "Error marshaling log: %v\n", err)
-		return
-	}
+		// Convert to JSON
+		jsonData, err := json.Marshal(output)
+		if err != nil {
+			// Fallback to simple output if JSON marshaling fails
+			fmt.Fprintf(l.output, "Error marshaling log: %v\n", err)
+			return
+		}
 
-	fmt.Fprintf(l.output, "%s\n", jsonData)
+		fmt.Fprintf(l.output, "%s\n", jsonData)
+	})
 }
 
 // Debugf logs a debug message
