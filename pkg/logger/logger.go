@@ -17,3 +17,7 @@ type Logger interface {
 	// Criticalf logs a critical message
 	Criticalf(format string, args ...interface{})
 }
+
+// D is the global direct logger instance
+// Usage: logger.D.Infof("message", args...)
+var D Logger = NewDirectLogger()
