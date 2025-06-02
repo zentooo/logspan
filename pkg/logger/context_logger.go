@@ -1,12 +1,13 @@
 package logger
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/zentooo/logspan/pkg/formatter"
 )
 
 // ContextLogger implements context-based logging with log aggregation
@@ -16,6 +17,7 @@ type ContextLogger struct {
 	startTime time.Time
 	output    io.Writer
 	minLevel  LogLevel
+	formatter formatter.Formatter
 	mu        sync.Mutex
 }
 
@@ -27,6 +29,7 @@ func NewContextLogger() *ContextLogger {
 		startTime: time.Now(),
 		output:    os.Stdout,
 		minLevel:  InfoLevel,
+		formatter: formatter.NewJSONFormatter(), // Default to JSON formatter
 	}
 }
 
@@ -93,6 +96,13 @@ func (l *ContextLogger) AddFields(fields map[string]interface{}) {
 	}
 }
 
+// SetFormatter sets the formatter for the logger
+func (l *ContextLogger) SetFormatter(f formatter.Formatter) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.formatter = f
+}
+
 // Flush outputs all accumulated log entries as a single JSON
 func (l *ContextLogger) Flush() {
 	l.mu.Lock()
@@ -103,53 +113,16 @@ func (l *ContextLogger) Flush() {
 	}
 
 	endTime := time.Now()
-	elapsed := endTime.Sub(l.startTime).Milliseconds()
 
-	// Find the highest severity level
-	maxSeverity := "DEBUG"
-	for _, entry := range l.entries {
-		if isHigherSeverity(entry.Level, maxSeverity) {
-			maxSeverity = entry.Level
-		}
-	}
-
-	// Create aggregated log output
-	output := map[string]interface{}{
-		"type":    "request",
-		"context": l.fields,
-		"runtime": map[string]interface{}{
-			"severity":  maxSeverity,
-			"startTime": l.startTime.Format(time.RFC3339Nano),
-			"endTime":   endTime.Format(time.RFC3339Nano),
-			"elapsed":   elapsed,
-			"lines":     l.entries,
-		},
-		"config": map[string]interface{}{
-			"elapsedUnit": "ms",
-		},
-	}
-
-	// Convert to JSON
-	jsonData, err := json.Marshal(output)
+	// Use the formatter (default or explicitly set)
+	jsonData, err := formatLogOutput(l.entries, l.fields, l.startTime, endTime, l.formatter)
 	if err != nil {
-		// Fallback to simple output if JSON marshaling fails
-		fmt.Fprintf(l.output, "Error marshaling log: %v\n", err)
+		// Fallback to simple output if formatting fails
+		fmt.Fprintf(l.output, "Error formatting log: %v\n", err)
 		return
 	}
 
 	fmt.Fprintf(l.output, "%s\n", jsonData)
-}
-
-// isHigherSeverity compares two severity levels
-func isHigherSeverity(level1, level2 string) bool {
-	levels := map[string]int{
-		"DEBUG":    0,
-		"INFO":     1,
-		"WARN":     2,
-		"ERROR":    3,
-		"CRITICAL": 4,
-	}
-	return levels[level1] > levels[level2]
 }
 
 // Debugf logs a debug message

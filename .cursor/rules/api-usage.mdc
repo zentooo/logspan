@@ -61,12 +61,19 @@ type Middleware func(entry *LogEntry, next func(*LogEntry))
 logger.AddMiddleware(yourMiddleware)
 ```
 
-## DataDog Integration
+## Formatter Configuration
 
-Enable DataDog Standard Attributes through configuration:
+### Setting Custom Formatters
 ```go
-config := logger.Config{
-    LogStyle: LogStyle.DataDogStandardAttribute // default: LogStyle.Default
-}
-logger.Init(config)
+// For DirectLogger
+directLogger := logger.NewDirectLogger()
+directLogger.SetFormatter(formatter.NewDataDogFormatter())
+
+// For ContextLogger
+contextLogger := logger.NewContextLogger()
+contextLogger.SetFormatter(formatter.NewDataDogFormatter())
 ```
+
+### Available Formatters
+- `formatter.NewJSONFormatter()` - Default JSON format
+- `formatter.NewDataDogFormatter()` - DataDog Standard Attributes format

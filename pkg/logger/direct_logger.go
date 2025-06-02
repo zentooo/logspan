@@ -1,26 +1,29 @@
 package logger
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/zentooo/logspan/pkg/formatter"
 )
 
 // DirectLogger implements the Logger interface for direct logging without context
 type DirectLogger struct {
-	output   io.Writer
-	minLevel LogLevel
-	mu       sync.Mutex
+	output    io.Writer
+	minLevel  LogLevel
+	formatter formatter.Formatter
+	mu        sync.Mutex
 }
 
 // NewDirectLogger creates a new DirectLogger instance
 func NewDirectLogger() *DirectLogger {
 	return &DirectLogger{
-		output:   os.Stdout,
-		minLevel: InfoLevel, // Default to INFO level
+		output:    os.Stdout,
+		minLevel:  InfoLevel,                    // Default to INFO level
+		formatter: formatter.NewJSONFormatter(), // Default formatter
 	}
 }
 
@@ -36,6 +39,13 @@ func (l *DirectLogger) SetLevel(level LogLevel) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.minLevel = level
+}
+
+// SetFormatter sets the formatter for the logger
+func (l *DirectLogger) SetFormatter(f formatter.Formatter) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.formatter = f
 }
 
 // SetLevelFromString sets the minimum log level from a string
@@ -73,27 +83,10 @@ func (l *DirectLogger) log(level LogLevel, format string, args ...interface{}) {
 
 	// Process through global middleware chain
 	processWithGlobalMiddleware(entry, func(processedEntry *LogEntry) {
-		// Create structured log output similar to context logger
-		output := map[string]interface{}{
-			"type":    "request",
-			"context": map[string]interface{}{},
-			"runtime": map[string]interface{}{
-				"severity":  processedEntry.Level,
-				"startTime": processedEntry.Timestamp.Format(time.RFC3339Nano),
-				"endTime":   processedEntry.Timestamp.Format(time.RFC3339Nano),
-				"elapsed":   0, // Direct log has no elapsed time
-				"lines":     []*LogEntry{processedEntry},
-			},
-			"config": map[string]interface{}{
-				"elapsedUnit": "ms",
-			},
-		}
-
-		// Convert to JSON
-		jsonData, err := json.Marshal(output)
+		// Use the formatter (default or explicitly set)
+		jsonData, err := formatLogOutput([]*LogEntry{processedEntry}, make(map[string]interface{}), processedEntry.Timestamp, processedEntry.Timestamp, l.formatter)
 		if err != nil {
-			// Fallback to simple output if JSON marshaling fails
-			fmt.Fprintf(l.output, "Error marshaling log: %v\n", err)
+			fmt.Fprintf(l.output, "Error formatting log: %v\n", err)
 			return
 		}
 

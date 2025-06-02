@@ -1,6 +1,12 @@
 package logger
 
-import "sync"
+import (
+	"encoding/json"
+	"sync"
+	"time"
+
+	"github.com/zentooo/logspan/pkg/formatter"
+)
 
 // Logger defines the interface for logging operations
 type Logger interface {
@@ -62,3 +68,101 @@ func processWithGlobalMiddleware(entry *LogEntry, final func(*LogEntry)) {
 // D is the global direct logger instance
 // Usage: logger.D.Infof("message", args...)
 var D Logger = NewDirectLogger()
+
+// formatLogOutput creates a LogOutput structure and formats it using the given formatter
+// If formatter is nil, returns JSON bytes directly
+func formatLogOutput(entries []*LogEntry, contextFields map[string]interface{}, startTime, endTime time.Time, f formatter.Formatter) ([]byte, error) {
+	elapsed := endTime.Sub(startTime).Milliseconds()
+
+	// Find the highest severity level
+	maxSeverity := "DEBUG"
+	for _, entry := range entries {
+		if isHigherSeverity(entry.Level, maxSeverity) {
+			maxSeverity = entry.Level
+		}
+	}
+
+	// Convert logger.LogEntry to formatter.LogEntry
+	formatterEntries := make([]*formatter.LogEntry, len(entries))
+	for i, entry := range entries {
+		formatterEntries[i] = &formatter.LogEntry{
+			Timestamp: entry.Timestamp,
+			Level:     entry.Level,
+			Message:   entry.Message,
+			Fields:    entry.Fields,
+			Tags:      entry.Tags,
+		}
+	}
+
+	// Create LogOutput structure
+	logOutput := &formatter.LogOutput{
+		Type:    "request",
+		Context: contextFields,
+		Runtime: formatter.RuntimeInfo{
+			Severity:  maxSeverity,
+			StartTime: startTime.Format(time.RFC3339Nano),
+			EndTime:   endTime.Format(time.RFC3339Nano),
+			Elapsed:   elapsed,
+			Lines:     formatterEntries,
+		},
+		Config: formatter.ConfigInfo{
+			ElapsedUnit: "ms",
+		},
+	}
+
+	// Use formatter if provided
+	if f != nil {
+		return f.Format(logOutput)
+	}
+
+	// Fallback to default JSON formatting
+	return defaultJSONFormat(logOutput)
+}
+
+// defaultJSONFormat provides the default JSON formatting as fallback
+func defaultJSONFormat(logOutput *formatter.LogOutput) ([]byte, error) {
+	// This matches the original format used by ContextLogger
+	output := map[string]interface{}{
+		"type":    logOutput.Type,
+		"context": logOutput.Context,
+		"runtime": map[string]interface{}{
+			"severity":  logOutput.Runtime.Severity,
+			"startTime": logOutput.Runtime.StartTime,
+			"endTime":   logOutput.Runtime.EndTime,
+			"elapsed":   logOutput.Runtime.Elapsed,
+			"lines":     convertFormatterEntriesToLogEntries(logOutput.Runtime.Lines),
+		},
+		"config": map[string]interface{}{
+			"elapsedUnit": logOutput.Config.ElapsedUnit,
+		},
+	}
+
+	return json.Marshal(output)
+}
+
+// convertFormatterEntriesToLogEntries converts formatter.LogEntry back to logger.LogEntry for JSON marshaling
+func convertFormatterEntriesToLogEntries(formatterEntries []*formatter.LogEntry) []*LogEntry {
+	entries := make([]*LogEntry, len(formatterEntries))
+	for i, entry := range formatterEntries {
+		entries[i] = &LogEntry{
+			Timestamp: entry.Timestamp,
+			Level:     entry.Level,
+			Message:   entry.Message,
+			Fields:    entry.Fields,
+			Tags:      entry.Tags,
+		}
+	}
+	return entries
+}
+
+// isHigherSeverity compares two severity levels
+func isHigherSeverity(level1, level2 string) bool {
+	levels := map[string]int{
+		"DEBUG":    0,
+		"INFO":     1,
+		"WARN":     2,
+		"ERROR":    3,
+		"CRITICAL": 4,
+	}
+	return levels[level1] > levels[level2]
+}
