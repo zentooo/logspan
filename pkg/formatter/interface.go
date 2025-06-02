@@ -22,12 +22,11 @@ type LogOutput struct {
 
 // RuntimeInfo contains runtime information for the log output
 type RuntimeInfo struct {
-	Severity  string         `json:"severity"`
-	StartTime string         `json:"startTime"`
-	EndTime   string         `json:"endTime"`
-	Elapsed   int64          `json:"elapsed"`
-	Lines     []*LogEntry    `json:"lines"`
-	Tags      map[string]int `json:"tags,omitempty"`
+	Severity  string      `json:"severity"`
+	StartTime string      `json:"startTime"`
+	EndTime   string      `json:"endTime"`
+	Elapsed   int64       `json:"elapsed"`
+	Lines     []*LogEntry `json:"lines"`
 }
 
 // ConfigInfo contains configuration information

@@ -206,7 +206,6 @@ logger.AddMiddleware(passwordMaskingMiddleware)
 
 // タグ追加ミドルウェア
 logger.AddMiddleware(func(entry *logger.LogEntry, next func(*logger.LogEntry)) {
-    entry.Tags = append(entry.Tags, "production")
     next(entry)
 })
 ```
@@ -253,8 +252,7 @@ contextLogger.SetFormatter(formatter.NewDataDogFormatter())
         "fields": {
           "request_id": "req-12345",
           "user_id": "user-67890"
-        },
-        "tags": []
+        }
       }
     ]
   },
