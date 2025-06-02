@@ -126,32 +126,16 @@ your-module-name/
         "message": "invoked",
         "time": "2023-10-27T09:59:59.123456+09:00",
         "fileline": 19,
-        "funcname": "main.main",
-        "tags": [
-          "critical", "debug_info"
-        ],
-        "attributes": {
-            "key": "value",
-            "process_id": 123
-        }
+        "funcname": "main.main"
       },
       {
         "severity": "INFO",
         "message": "Processing complete",
         "time": "2023-10-27T10:00:00.123456+09:00",
         "fileline": 25,
-        "funcname": "main.processData",
-        "tags": [
-          "audit"
-        ],
-        "attributes": "Process successful"
+        "funcname": "main.processData"
       }
-    ],
-    "tags": {
-      "critical": 1,
-      "debug_info": 1,
-      "audit": 1
-    }
+    ]
   },
   "config": {
     "elapsedUnit": "ms"

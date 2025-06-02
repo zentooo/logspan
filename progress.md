@@ -26,17 +26,17 @@
 - [x] 2-3. Formatter interfaceの確認・必要に応じて拡張
 
 ### 3. Logger側の対応
-- [ ] 3-1. ContextLoggerでconfig.PrettifyJSONを参照するよう修正
-- [ ] 3-2. DirectLoggerでconfig.PrettifyJSONを参照するよう修正
+- [x] 3-1. ContextLoggerでconfig.PrettifyJSONを参照するよう修正
+- [x] 3-2. DirectLoggerでconfig.PrettifyJSONを参照するよう修正
 
 ### 4. Examples更新
-- [ ] 4-1. examples/context_logger/main.goでprettify設定を有効化
-- [ ] 4-2. examples/direct_logger/main.goでprettify設定を有効化
-- [ ] 4-3. examples/http_middleware_example.goでprettify設定を有効化
+- [x] 4-1. examples/context_logger/main.goでprettify設定を有効化
+- [x] 4-2. examples/direct_logger/main.goでprettify設定を有効化
+- [x] 4-3. examples/http_middleware_example.goでprettify設定を有効化
 
 ### 5. 動作確認
-- [ ] 5-1. 各exampleを実行してJSON出力が整形されることを確認
-- [ ] 5-2. prettify無効時の動作も確認
+- [x] 5-1. 各exampleを実行してJSON出力が整形されることを確認
+- [x] 5-2. prettify無効時の動作も確認
 
 ## 進捗状況
-- [ ] タスク開始
+- [x] タスク完了

@@ -8,6 +8,13 @@ import (
 )
 
 func main() {
+	// Initialize logger with prettify enabled
+	logger.Init(logger.Config{
+		MinLevel:     logger.DebugLevel,
+		Output:       nil, // Use default (stdout)
+		PrettifyJSON: true,
+	})
+
 	// Create a new direct logger
 	dl := logger.NewDirectLogger()
 

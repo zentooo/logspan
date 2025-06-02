@@ -10,6 +10,13 @@ import (
 func main() {
 	fmt.Println("=== Context Logger Example ===")
 
+	// Initialize logger with prettify enabled
+	logger.Init(logger.Config{
+		MinLevel:     logger.DebugLevel,
+		Output:       nil, // Use default (stdout)
+		PrettifyJSON: true,
+	})
+
 	// Create a context with a logger
 	ctx := context.Background()
 	contextLogger := logger.NewContextLogger()

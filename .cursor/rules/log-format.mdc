@@ -26,18 +26,9 @@ The default log output follows this structure:
         "message": "invoked",
         "time": "2023-10-27T09:59:59.123456+09:00",
         "fileline": 19,
-        "funcname": "main.main",
-        "tags": ["critical", "debug_info"],
-        "attributes": {
-          "key": "value",
-          "process_id": 123
-        }
+        "funcname": "main.main"
       }
-    ],
-    "tags": {
-      "critical": 1,
-      "debug_info": 1
-    }
+    ]
   },
   "config": {
     "elapsedUnit": "ms"
@@ -59,7 +50,6 @@ The default log output follows this structure:
 - `endTime`: Processing end time (ISO8601)
 - `elapsed`: Processing duration
 - `lines`: Array of individual log entries
-- `tags`: Aggregated tag counts
 
 ### Log Entry (in lines array)
 - `severity`: Log level
@@ -67,8 +57,6 @@ The default log output follows this structure:
 - `time`: Timestamp (ISO8601)
 - `fileline`: Source code line number
 - `funcname`: Function name
-- `tags`: Array of tags
-- `attributes`: Additional information
 
 ## DataDog Standard Attributes
 
