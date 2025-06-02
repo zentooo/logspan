@@ -38,11 +38,11 @@ func TestContextLogger_AddFields(t *testing.T) {
 	logger.SetOutput(&buf)
 
 	// Add context fields
-	logger.AddField("request_id", "12345")
-	logger.AddField("user_id", "user123")
+	logger.AddContextValue("request_id", "12345")
+	logger.AddContextValue("user_id", "user123")
 
 	// Add multiple fields
-	logger.AddFields(map[string]interface{}{
+	logger.AddContextValues(map[string]interface{}{
 		"session_id": "session456",
 		"ip_address": "192.168.1.1",
 	})
@@ -51,6 +51,7 @@ func TestContextLogger_AddFields(t *testing.T) {
 	logger.Flush()
 
 	output := buf.String()
+	// Context fields should appear in the context section, not in individual log entries
 	if !strings.Contains(output, "request_id") {
 		t.Error("Expected 'request_id' in output")
 	}
@@ -165,7 +166,7 @@ func TestContextAPI_Functions(t *testing.T) {
 	ctx = WithLogger(ctx, logger)
 
 	// Test context API functions
-	AddField(ctx, "test_key", "test_value")
+	AddContextValue(ctx, "test_key", "test_value")
 	Infof(ctx, "Test message")
 	Errorf(ctx, "Error message")
 

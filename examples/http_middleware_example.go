@@ -26,8 +26,8 @@ func main() {
 		logger.Infof(r.Context(), "Processing request for path: %s", r.URL.Path)
 
 		// Add custom fields to the request context
-		logger.AddField(r.Context(), "user_id", "12345")
-		logger.AddField(r.Context(), "operation", "get_user_profile")
+		logger.AddContextValue(r.Context(), "user_id", "12345")
+		logger.AddContextValue(r.Context(), "operation", "get_user_profile")
 
 		// Simulate some processing time
 		time.Sleep(100 * time.Millisecond)
@@ -51,8 +51,8 @@ func main() {
 		logger.Infof(r.Context(), "Processing different endpoint")
 
 		// Add different fields
-		logger.AddField(r.Context(), "endpoint", "api_status")
-		logger.AddField(r.Context(), "version", "v1.0")
+		logger.AddContextValue(r.Context(), "endpoint", "api_status")
+		logger.AddContextValue(r.Context(), "version", "v1.0")
 
 		// Simulate different processing
 		time.Sleep(50 * time.Millisecond)
@@ -71,8 +71,8 @@ func main() {
 		logger.Infof(r.Context(), "Processing error endpoint")
 
 		// Add error context
-		logger.AddField(r.Context(), "endpoint", "error_test")
-		logger.AddField(r.Context(), "error_type", "simulated")
+		logger.AddContextValue(r.Context(), "endpoint", "error_test")
+		logger.AddContextValue(r.Context(), "error_type", "simulated")
 
 		// Log an error
 		logger.Errorf(r.Context(), "Simulated error occurred")

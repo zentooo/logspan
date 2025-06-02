@@ -77,26 +77,21 @@ func (l *ContextLogger) addEntry(level LogLevel, message string) {
 		Fields:    make(map[string]interface{}),
 	}
 
-	// Copy context fields to the entry
-	for k, v := range l.fields {
-		entry.Fields[k] = v
-	}
-
 	// Process through global middleware chain
 	processWithGlobalMiddleware(entry, func(processedEntry *LogEntry) {
 		l.entries = append(l.entries, processedEntry)
 	})
 }
 
-// AddField adds a field to the context
-func (l *ContextLogger) AddField(key string, value interface{}) {
+// AddContextValue adds a field to the context
+func (l *ContextLogger) AddContextValue(key string, value interface{}) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.fields[key] = value
 }
 
-// AddFields adds multiple fields to the context
-func (l *ContextLogger) AddFields(fields map[string]interface{}) {
+// AddContextValues adds multiple fields to the context
+func (l *ContextLogger) AddContextValues(fields map[string]interface{}) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	for k, v := range fields {

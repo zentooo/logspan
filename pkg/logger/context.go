@@ -27,16 +27,16 @@ func FromContext(ctx context.Context) *ContextLogger {
 	return NewContextLogger()
 }
 
-// AddField adds a field to the logger in the context
-func AddField(ctx context.Context, key string, value interface{}) {
+// AddContextValue adds a field to the logger in the context
+func AddContextValue(ctx context.Context, key string, value interface{}) {
 	logger := FromContext(ctx)
-	logger.AddField(key, value)
+	logger.AddContextValue(key, value)
 }
 
-// AddFields adds multiple fields to the logger in the context
-func AddFields(ctx context.Context, fields map[string]interface{}) {
+// AddContextValues adds multiple fields to the logger in the context
+func AddContextValues(ctx context.Context, fields map[string]interface{}) {
 	logger := FromContext(ctx)
-	logger.AddFields(fields)
+	logger.AddContextValues(fields)
 }
 
 // Infof logs an info message using the logger from context

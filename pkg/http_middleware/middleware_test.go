@@ -149,7 +149,7 @@ func TestResponseWriterWrapper(t *testing.T) {
 	// This is a bit of a hack for testing, but it works
 	contextLogger := logger.NewContextLogger()
 	contextLogger.SetOutput(&logOutput)
-	contextLogger.AddField("status_code", 404)
+	contextLogger.AddContextValue("status_code", 404)
 	contextLogger.Infof("Test")
 	contextLogger.Flush()
 

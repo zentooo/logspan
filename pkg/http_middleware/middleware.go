@@ -15,7 +15,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		contextLogger := logger.NewContextLogger()
 
 		// Add basic HTTP request information to the context
-		contextLogger.AddFields(map[string]interface{}{
+		contextLogger.AddContextValues(map[string]interface{}{
 			"method":      r.Method,
 			"url":         r.URL.String(),
 			"path":        r.URL.Path,
@@ -48,7 +48,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		duration := time.Since(startTime)
 
 		// Add response information to the context
-		contextLogger.AddFields(map[string]interface{}{
+		contextLogger.AddContextValues(map[string]interface{}{
 			"status_code": wrappedWriter.statusCode,
 			"duration_ms": duration.Milliseconds(),
 		})

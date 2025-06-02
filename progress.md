@@ -1,42 +1,48 @@
-# JSON出力Prettify機能追加タスク
+# AddField関数の動作変更とリネーム
 
-## 概要
-最終的なJSON出力をprettifyするためのconfigを作成し、examples以下で全てオンにする
+## タスク概要
+現在のAddField関数は、LogEntryとcontextの両方にフィールドを追加しているが、contextのみに追加するように変更し、関数名をAddContextValueに変更する。
 
-## 現状分析
-- 現在のConfig構造: MinLevel, Output, EnableSourceInfoの3つのフィールド
-- Examples: context_logger, direct_logger, http_middleware_exampleの3つ
-- JSON出力は現在compact形式（改行・インデントなし）
+## 進め方
+1. 現在の実装を詳細に調査
+2. 変更が必要なファイルを特定
+3. 段階的に変更を実施
+4. テストを実行して動作確認
 
-## タスク全体の進め方
-1. Config構造にPrettifyJSONフィールドを追加
-2. Formatter側でprettify対応を実装
-3. 各exampleでprettify設定を有効化
-4. 動作確認とテスト
+## サブタスク
 
-## サブタスク一覧
+### 1. 現在の実装調査
+- [x] 1-1. AddField関数の実装詳細を確認
+  - `pkg/logger/context.go`の`AddField`関数：contextからloggerを取得し、`logger.AddField`を呼び出す
+  - `pkg/logger/context_logger.go`の`AddField`関数：`l.fields[key] = value`でcontextフィールドに追加
+  - `addEntry`関数内で`l.fields`の内容を`entry.Fields`にコピーしている（74-76行目）
+- [x] 1-2. LogEntryにフィールドが追加される箇所を特定
+  - `pkg/logger/context_logger.go:81` - `addEntry`関数内でcontextフィールドをLogEntryにコピー
+  - `pkg/logger/direct_logger.go:88` - DirectLoggerでLogEntry作成時に空のFieldsを初期化
+  - ミドルウェア内でentry.Fields[key] = valueの形で直接追加される箇所が多数
+- [x] 1-3. contextにフィールドが追加される箇所を特定
+  - `pkg/logger/context_logger.go:94` - AddField関数内
+  - `pkg/logger/context_logger.go:102` - AddFields関数内
+- [x] 1-4. 影響範囲を調査（テスト、ドキュメント等）
+  - **使用箇所**: examples/, pkg/http_middleware/, テストファイル多数
+  - **ドキュメント**: README.md, design.md, .cursor/rules/api-usage.mdc
+  - **主要な変更対象**:
+    - 関数名変更: AddField → AddContextValue, AddFields → AddContextValues
+    - 動作変更: LogEntryへのフィールドコピーを停止
 
-### 1. Config構造の拡張
-- [x] 1-1. pkg/logger/config.goにPrettifyJSONフィールドを追加
-- [x] 1-2. DefaultConfig()でPrettifyJSONのデフォルト値を設定
+### 2. 実装変更
+- [x] 2-1. ContextLoggerのaddEntry関数を修正（contextフィールドをLogEntryにコピーしないように）
+- [x] 2-2. AddField関数をAddContextValueに名前変更
+- [x] 2-3. AddFields関数をAddContextValuesに名前変更（一貫性のため）
 
-### 2. Formatter側の対応
-- [x] 2-1. pkg/formatter/json_formatter.goでprettify対応を実装
-- [x] 2-2. pkg/formatter/datadog_formatter.goでprettify対応を実装
-- [x] 2-3. Formatter interfaceの確認・必要に応じて拡張
+### 3. テスト修正
+- [ ] 3-1. 関連するテストケースを修正
+- [ ] 3-2. 新しい動作に合わせてテスト期待値を更新
 
-### 3. Logger側の対応
-- [x] 3-1. ContextLoggerでconfig.PrettifyJSONを参照するよう修正
-- [x] 3-2. DirectLoggerでconfig.PrettifyJSONを参照するよう修正
-
-### 4. Examples更新
-- [x] 4-1. examples/context_logger/main.goでprettify設定を有効化
-- [x] 4-2. examples/direct_logger/main.goでprettify設定を有効化
-- [x] 4-3. examples/http_middleware_example.goでprettify設定を有効化
+### 4. ドキュメント更新
+- [ ] 4-1. README.mdの更新
+- [ ] 4-2. API使用ガイドの更新
 
 ### 5. 動作確認
-- [x] 5-1. 各exampleを実行してJSON出力が整形されることを確認
-- [x] 5-2. prettify無効時の動作も確認
-
-## 進捗状況
-- [x] タスク完了
+- [ ] 5-1. 全テストの実行
+- [ ] 5-2. 実際の動作確認
