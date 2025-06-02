@@ -74,7 +74,6 @@ func (l *ContextLogger) addEntry(level LogLevel, message string) {
 		Timestamp: time.Now(),
 		Level:     level.String(),
 		Message:   message,
-		Fields:    make(map[string]interface{}),
 	}
 
 	// Process through global middleware chain

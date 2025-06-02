@@ -63,11 +63,6 @@ func (f *DataDogFormatter) convertToDataDogFormat(output *LogOutput) interface{}
 				"logger":    "logspan",
 			}
 
-			// Add custom fields
-			for k, v := range entry.Fields {
-				line[k] = v
-			}
-
 			lines[i] = line
 		}
 		ddOutput["lines"] = lines

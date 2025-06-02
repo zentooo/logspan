@@ -42,13 +42,13 @@ logger.D.Criticalf(format string, args ...interface{})
 
 (add key/value to "context" of log entry)
 
-### Adding Fields
+### Adding Context Fields
 ```go
 // Add single field
-logger.AddField(ctx context.Context, key string, value interface{})
+logger.AddContextValue(ctx context.Context, key string, value interface{})
 
 // Add multiple fields
-logger.AddFields(ctx context.Context, fields map[string]interface{})
+logger.AddContextValues(ctx context.Context, fields map[string]interface{})
 ```
 
 ## Middleware

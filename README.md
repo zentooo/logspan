@@ -124,15 +124,15 @@ logger.D.Criticalf("重大なエラー: %v", criticalErr)
 
 ### 3. コンテキスト操作
 
-#### フィールドの追加
+#### コンテキストフィールドの追加
 
 ```go
 // 単一フィールドの追加
-logger.AddField(ctx, "user_id", "12345")
-logger.AddField(ctx, "session_id", "session-abc")
+logger.AddContextValue(ctx, "user_id", "12345")
+logger.AddContextValue(ctx, "session_id", "session-abc")
 
 // 複数フィールドの追加
-logger.AddFields(ctx, map[string]interface{}{
+logger.AddContextValues(ctx, map[string]interface{}{
     "request_id": "req-67890",
     "ip_address": "192.168.1.1",
     "user_agent": "Mozilla/5.0...",
@@ -248,11 +248,7 @@ contextLogger.SetFormatter(formatter.NewDataDogFormatter())
       {
         "timestamp": "2023-10-27T09:59:59.123456+09:00",
         "level": "INFO",
-        "message": "リクエスト処理を開始",
-        "fields": {
-          "request_id": "req-12345",
-          "user_id": "user-67890"
-        }
+        "message": "リクエスト処理を開始"
       }
     ]
   },

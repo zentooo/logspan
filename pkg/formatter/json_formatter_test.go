@@ -13,7 +13,6 @@ func TestJSONFormatter_Format(t *testing.T) {
 		Timestamp: time.Date(2023, 10, 27, 10, 0, 0, 0, time.UTC),
 		Level:     "INFO",
 		Message:   "test message",
-		Fields:    map[string]interface{}{"key": "value"},
 	}
 
 	output := &LogOutput{

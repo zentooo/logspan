@@ -67,11 +67,6 @@ func (pmm *PasswordMaskingMiddleware) Middleware() Middleware {
 		// Mask passwords in message
 		entry.Message = pmm.maskPasswordsInMessage(entry.Message)
 
-		// Mask passwords in fields
-		if entry.Fields != nil {
-			entry.Fields = pmm.maskPasswordsInFields(entry.Fields)
-		}
-
 		// Continue to next middleware
 		next(entry)
 	}
