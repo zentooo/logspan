@@ -16,7 +16,7 @@ The default log output follows this structure:
     "REQUEST_ID": "xxxxxxx"
   },
   "runtime": {
-    "severity": "INFO",
+    "severity": "INFO", // max severity level in lines.severity
     "startTime": "2023-10-27T09:59:58.123456+09:00",
     "endTime": "2023-10-27T10:00:00.223456+09:00",
     "elapsed": 150,
