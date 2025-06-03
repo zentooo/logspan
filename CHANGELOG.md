@@ -1,4 +1,9 @@
 # Changelog
+## v0.0.1 (2025-06-03)
+
+### Initial Release
+- Initial release of LogSpan logging library
+
 
 All notable changes to this project will be documented in this file.
 
