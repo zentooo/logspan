@@ -2,60 +2,22 @@ package logger
 
 import (
 	"fmt"
-	"io"
 	"os"
-	"sync"
 	"time"
-
-	"github.com/zentooo/logspan/pkg/formatter"
 )
 
 // DirectLogger implements the Logger interface for direct logging without context
 type DirectLogger struct {
-	output    io.Writer
-	minLevel  LogLevel
-	formatter formatter.Formatter
-	mu        sync.Mutex
+	*BaseLogger
 }
 
 // NewDirectLogger creates a new DirectLogger instance
 func NewDirectLogger() *DirectLogger {
+	base := newBaseLogger()
+	base.output = os.Stdout // Set default output for DirectLogger
 	return &DirectLogger{
-		output:    os.Stdout,
-		minLevel:  InfoLevel,
-		formatter: createDefaultFormatter(),
+		BaseLogger: &base,
 	}
-}
-
-// SetOutput sets the output writer for the logger
-func (l *DirectLogger) SetOutput(w io.Writer) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.output = w
-}
-
-// SetLevel sets the minimum log level for filtering
-func (l *DirectLogger) SetLevel(level LogLevel) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.minLevel = level
-}
-
-// SetFormatter sets the formatter for the logger
-func (l *DirectLogger) SetFormatter(f formatter.Formatter) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.formatter = f
-}
-
-// SetLevelFromString sets the minimum log level from a string
-func (l *DirectLogger) SetLevelFromString(level string) {
-	l.SetLevel(ParseLogLevel(level))
-}
-
-// isLevelEnabled checks if the given level should be logged
-func (l *DirectLogger) isLevelEnabled(level LogLevel) bool {
-	return IsLevelEnabled(level, l.minLevel)
 }
 
 // logf writes a log entry with the given level and message in structured format
@@ -64,10 +26,10 @@ func (l *DirectLogger) logf(level LogLevel, format string, args ...interface{}) 
 		return
 	}
 
-	l.mu.Lock()
-	defer l.mu.Unlock()
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
 
-	// nilの出力先の場合は何もしない
+	// Do nothing if output is nil
 	if l.output == nil {
 		return
 	}
@@ -94,15 +56,23 @@ func (l *DirectLogger) logf(level LogLevel, format string, args ...interface{}) 
 		// Use the formatter (default or explicitly set)
 		jsonData, err := formatLogOutput([]*LogEntry{processedEntry}, make(map[string]interface{}), processedEntry.Timestamp, processedEntry.Timestamp, l.formatter)
 		if err != nil {
-			_, _ = fmt.Fprintf(l.output, "Error formatting log: %v\n", err)
+			// Handle formatting error using error handler
+			handleError("format", err)
+			_, writeErr := fmt.Fprintf(l.output, "Error formatting log: %v\n", err)
+			if writeErr != nil {
+				handleError("write_fallback", writeErr)
+			}
 			return
 		}
 
 		if _, err := fmt.Fprintf(l.output, "%s\n", jsonData); err != nil {
-			// If writing fails, try to write an error message
-			// This is a best-effort attempt since the output might be broken
-			// We intentionally ignore any error from this fallback write
-			_, _ = fmt.Fprintf(l.output, "Error writing log output: %v\n", err)
+			// Handle write error using error handler
+			handleError("write", err)
+			// Try to write an error message as fallback
+			_, fallbackErr := fmt.Fprintf(l.output, "Error writing log output: %v\n", err)
+			if fallbackErr != nil {
+				handleError("write_error_fallback", fallbackErr)
+			}
 		}
 	})
 }

@@ -2,26 +2,19 @@ package logger
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
-
-	"github.com/zentooo/logspan/pkg/formatter"
 )
 
 // ContextLogger implements context-based logging with log aggregation
 type ContextLogger struct {
+	*BaseLogger
 	entries    []*LogEntry
 	fields     map[string]interface{}
 	startTime  time.Time
-	output     io.Writer
-	minLevel   LogLevel
-	formatter  formatter.Formatter
 	maxEntries int // Maximum number of entries before auto-flush
-	mu         sync.Mutex
 }
 
 // NewContextLogger creates a new ContextLogger instance
@@ -29,34 +22,17 @@ func NewContextLogger() *ContextLogger {
 	// Get global config to determine formatter settings
 	config := GetConfig()
 
+	base := newBaseLogger()
+	base.output = os.Stdout // Set default output for ContextLogger
+	base.minLevel = config.MinLevel
+
 	return &ContextLogger{
+		BaseLogger: &base,
 		entries:    make([]*LogEntry, 0),
 		fields:     make(map[string]interface{}),
 		startTime:  time.Now(),
-		output:     os.Stdout,
-		minLevel:   config.MinLevel,
-		formatter:  createDefaultFormatter(),
 		maxEntries: config.MaxLogEntries,
 	}
-}
-
-// SetOutput sets the output writer for the logger
-func (l *ContextLogger) SetOutput(w io.Writer) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.output = w
-}
-
-// SetLevel sets the minimum log level for filtering
-func (l *ContextLogger) SetLevel(level LogLevel) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.minLevel = level
-}
-
-// isLevelEnabled checks if the given level should be logged
-func (l *ContextLogger) isLevelEnabled(level LogLevel) bool {
-	return IsLevelEnabled(level, l.minLevel)
 }
 
 // addEntry adds a log entry to the context logger
@@ -65,8 +41,8 @@ func (l *ContextLogger) addEntry(level LogLevel, message string) {
 		return
 	}
 
-	l.mu.Lock()
-	defer l.mu.Unlock()
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
 
 	entry := &LogEntry{
 		Timestamp: time.Now(),
@@ -127,16 +103,24 @@ func (l *ContextLogger) flushInternal() {
 	// Use the formatter (default or explicitly set)
 	jsonData, err := formatLogOutput(l.entries, l.fields, l.startTime, endTime, l.formatter)
 	if err != nil {
+		// Handle formatting error using error handler
+		handleError("format", err)
 		// Fallback to simple output if formatting fails
-		_, _ = fmt.Fprintf(l.output, "Error formatting log: %v\n", err)
+		_, writeErr := fmt.Fprintf(l.output, "Error formatting log: %v\n", err)
+		if writeErr != nil {
+			handleError("write_fallback", writeErr)
+		}
 		return
 	}
 
 	if _, err := fmt.Fprintf(l.output, "%s\n", jsonData); err != nil {
-		// If writing fails, try to write an error message
-		// This is a best-effort attempt since the output might be broken
-		// We intentionally ignore any error from this fallback write
-		_, _ = fmt.Fprintf(l.output, "Error writing log output: %v\n", err)
+		// Handle write error using error handler
+		handleError("write", err)
+		// Try to write an error message as fallback
+		_, fallbackErr := fmt.Fprintf(l.output, "Error writing log output: %v\n", err)
+		if fallbackErr != nil {
+			handleError("write_error_fallback", fallbackErr)
+		}
 	}
 
 	// Clear entries after flushing and reset start time
@@ -146,32 +130,25 @@ func (l *ContextLogger) flushInternal() {
 
 // Flush outputs all accumulated log entries as a single JSON
 func (l *ContextLogger) Flush() {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
 	l.flushInternal()
 }
 
 // AddContextValue adds a field to the context
 func (l *ContextLogger) AddContextValue(key string, value interface{}) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
 	l.fields[key] = value
 }
 
 // AddContextValues adds multiple fields to the context
 func (l *ContextLogger) AddContextValues(fields map[string]interface{}) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
 	for k, v := range fields {
 		l.fields[k] = v
 	}
-}
-
-// SetFormatter sets the formatter for the logger
-func (l *ContextLogger) SetFormatter(f formatter.Formatter) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.formatter = f
 }
 
 // Debugf logs a debug message
