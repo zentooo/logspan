@@ -64,7 +64,7 @@ func putLogEntrySlice(slice []*LogEntry) {
 
 	// Only return slices with reasonable capacity to avoid memory bloat
 	if cap(slice) <= 1024 { // Configurable threshold
-		slicePool.Put(slice)
+		slicePool.Put(slice) //nolint:staticcheck // slice reuse is more important than avoiding small allocation
 	}
 	// If capacity is too large, let it be garbage collected
 }

@@ -188,7 +188,10 @@ func BenchmarkLogEntryWithoutPool(b *testing.B) {
 			Filename:  "benchmark.go",
 			Fileline:  42,
 		}
-		_ = entry // Use the entry to prevent optimization
+		// Use the entry fields to prevent optimization and unused write warnings
+		if entry.Level == "" || entry.Message == "" || entry.Funcname == "" || entry.Filename == "" || entry.Fileline == 0 || entry.Timestamp.IsZero() {
+			b.Fatal("Entry fields should be set")
+		}
 	}
 }
 
