@@ -1,27 +1,72 @@
 # LogSpan
 
-LogSpanは、Go言語向けの構造化ロギングライブラリです。HTTPリクエスト単位でログを集約する**コンテキストロガー**と、即座にログを出力する**ダイレクトロガー**の2つのモードを提供し、柔軟で使いやすいロギング機能を実現します。
+> **日本語版**: [README_JA.md](README_JA.md)
 
-## 🎯 主な特徴
+LogSpan is a **zero-dependency** structured logging library for Go that provides **context-based log aggregation** by **consolidating multiple log entries into a single JSON structure**. This enables unified log management per HTTP request or batch processing unit. Unlike traditional scattered logging, LogSpan outputs all related logs in a single JSON structure, improving log analysis and troubleshooting efficiency.
 
-- **デュアルモードロギング**: コンテキストベースとダイレクトの2つのロギングモード
-- **構造化ログ出力**: JSON形式での一貫したログ出力
-- **ソース情報取得**: 関数名、ファイル名、行番号の自動取得（デバッグ支援）
-- **ミドルウェア機構**: ログ処理パイプラインのカスタマイズが可能
-- **コンテキスト展開**: contextフィールドをトップレベルに展開するフォーマッター
-- **HTTPミドルウェア**: Webアプリケーションでの自動ログ設定
-- **並行処理安全**: goroutineセーフな実装
-- **シンプルなAPI**: 直感的で使いやすいインターフェース
+## 🎯 Key Features
 
-## 📦 インストール
+- **🔗 Context-based Log Aggregation**: Consolidates multiple log entries into a single JSON for unified log management
+- **🚀 Zero Dependencies**: Operates solely with Go standard library, no external dependencies required
+- **Dual-mode logging**: Context-based and direct logging modes
+- **Structured log output**: Consistent JSON-formatted log output
+- **Middleware mechanism**: Customizable log processing pipeline
+- **Context flattening**: Formatter that expands context fields to top level
+- **HTTP middleware**: Automatic log setup for web applications
+- **Concurrency-safe**: Goroutine-safe implementation
+- **Simple API**: Intuitive and easy-to-use interface
+
+## 💡 Concept
+
+### Traditional Logging Challenges
+Traditional logging libraries output multiple log entries individually for a single request or process, causing related logs to scatter throughout log files. This makes it difficult to trace related logs and leads to inefficient debugging and troubleshooting.
+
+### LogSpan's Approach
+LogSpan solves this problem with **context-based log aggregation**:
+
+#### 🔗 Unified JSON Structure
+```json
+{
+  "type": "request",
+  "context": {
+    "request_id": "req-12345",
+    "user_id": "user-67890"
+  },
+  "runtime": {
+    "severity": "INFO",
+    "startTime": "2023-10-27T09:59:58.123456+09:00",
+    "endTime": "2023-10-27T10:00:00.223456+09:00",
+    "elapsed": 150,
+    "lines": [
+      {"timestamp": "...", "level": "INFO", "message": "Request processing started"},
+      {"timestamp": "...", "level": "DEBUG", "message": "Validating parameters"},
+      {"timestamp": "...", "level": "INFO", "message": "Processing completed"}
+    ]
+  }
+}
+```
+
+#### 🚀 Zero-Dependency Lightweight Design
+- **No External Dependencies**: Uses only Go standard library
+- **Lightweight**: Minimal memory footprint
+- **Fast**: Efficient log processing
+- **Secure**: No vulnerability risks from external dependencies
+
+### Benefits
+- **Efficient Log Analysis**: All related logs consolidated into a single JSON
+- **Improved Troubleshooting**: Context information and processing time visible at a glance
+- **Simplified Operations**: No dependency management required
+- **Better Performance**: Lightweight and fast processing
+
+## 📦 Installation
 
 ```bash
 go get github.com/zentooo/logspan
 ```
 
-## 🚀 クイックスタート
+## 🚀 Quick Start
 
-### ダイレクトロガー（即時出力）
+### Direct Logger (Immediate Output)
 
 ```go
 package main
@@ -29,14 +74,14 @@ package main
 import "github.com/zentooo/logspan/pkg/logger"
 
 func main() {
-    // グローバルダイレクトロガーを使用
-    logger.D.Infof("アプリケーションが開始されました")
-    logger.D.Warnf("警告: %s", "設定ファイルが見つかりません")
-    logger.D.Errorf("エラー: %v", err)
+    // Use global direct logger
+    logger.D.Infof("Application started")
+    logger.D.Warnf("Warning: %s", "Configuration file not found")
+    logger.D.Errorf("Error: %v", err)
 }
 ```
 
-### コンテキストロガー（ログ集約）
+### Context Logger (Log Aggregation)
 
 ```go
 package main
@@ -47,36 +92,36 @@ import (
 )
 
 func main() {
-    // コンテキストロガーの作成
+    // Create context logger
     ctx := context.Background()
     contextLogger := logger.NewContextLogger()
     ctx = logger.WithLogger(ctx, contextLogger)
 
-    // コンテキスト情報の追加
+    // Add context information
     logger.AddContextValue(ctx, "request_id", "req-12345")
     logger.AddContextValue(ctx, "user_id", "user-67890")
 
-    // ログの記録
-    logger.Infof(ctx, "リクエスト処理を開始")
+    // Record logs
+    logger.Infof(ctx, "Request processing started")
     processRequest(ctx)
-    logger.Infof(ctx, "リクエスト処理が完了")
+    logger.Infof(ctx, "Request processing completed")
 
-    // 集約されたログの出力
+    // Output aggregated logs
     logger.FlushContext(ctx)
 }
 
 func processRequest(ctx context.Context) {
     logger.AddContextValue(ctx, "step", "validation")
-    logger.Debugf(ctx, "入力パラメータを検証中")
-    logger.Infof(ctx, "入力検証が完了")
+    logger.Debugf(ctx, "Validating input parameters")
+    logger.Infof(ctx, "Input validation completed")
 }
 ```
 
-## 📖 詳細な使用方法
+## 📖 Detailed Usage
 
-### 1. 初期化と設定
+### 1. Initialization and Configuration
 
-#### グローバル設定
+#### Global Configuration
 
 ```go
 import "github.com/zentooo/logspan/pkg/logger"
@@ -85,186 +130,73 @@ func init() {
     config := logger.Config{
         MinLevel:         logger.DebugLevel,
         Output:           os.Stdout,
-        EnableSourceInfo: true,  // ソース情報（関数名、ファイル名、行番号）を有効化
-        PrettifyJSON:     true,  // 読みやすいJSON形式で出力
-        MaxLogEntries:    1000,  // 1000エントリで自動フラッシュ
+        EnableSourceInfo: true,
     }
     logger.Init(config)
 }
 ```
 
-#### 個別ロガーの設定
+#### Individual Logger Configuration
 
 ```go
-// ダイレクトロガーの設定
+// Direct logger configuration
 directLogger := logger.NewDirectLogger()
 directLogger.SetLevelFromString("WARN")
 directLogger.SetOutput(logFile)
 
-// コンテキストロガーの設定
+// Context logger configuration
 contextLogger := logger.NewContextLogger()
 contextLogger.SetLevel(logger.InfoLevel)
 contextLogger.SetOutput(logFile)
 ```
 
-### 2. ログレベル
+### 2. Log Levels
 
-LogSpanは5つのログレベルをサポートしています：
+LogSpan supports five log levels:
 
-- `DEBUG`: 詳細なデバッグ情報
-- `INFO`: 一般的な情報メッセージ
-- `WARN`: 警告メッセージ
-- `ERROR`: エラーメッセージ
-- `CRITICAL`: 重大なエラーメッセージ
-
-```go
-logger.D.Debugf("デバッグ情報: %s", debugInfo)
-logger.D.Infof("情報: %s", info)
-logger.D.Warnf("警告: %s", warning)
-logger.D.Errorf("エラー: %v", err)
-logger.D.Criticalf("重大なエラー: %v", criticalErr)
-```
-
-### 3. ソース情報機能
-
-LogSpanは、デバッグやトラブルシューティングを支援するため、ログエントリにソースコード情報を自動的に追加する機能を提供します。
-
-#### ソース情報の有効化
+- `DEBUG`: Detailed debugging information
+- `INFO`: General informational messages
+- `WARN`: Warning messages
+- `ERROR`: Error messages
+- `CRITICAL`: Critical error messages
 
 ```go
-// グローバル設定でソース情報を有効化
-config := logger.Config{
-    MinLevel:         logger.DebugLevel,
-    EnableSourceInfo: true,  // ソース情報を有効化
-    Output:           os.Stdout,
-}
-logger.Init(config)
-
-// ログ出力時に自動的にソース情報が追加される
-logger.D.Infof("アプリケーションが開始されました")
+logger.D.Debugf("Debug info: %s", debugInfo)
+logger.D.Infof("Info: %s", info)
+logger.D.Warnf("Warning: %s", warning)
+logger.D.Errorf("Error: %v", err)
+logger.D.Criticalf("Critical error: %v", criticalErr)
 ```
 
-#### 出力されるソース情報
+### 3. Context Operations
 
-ソース情報が有効な場合、各ログエントリに以下の情報が自動的に追加されます：
-
-- `funcname`: 関数名（パッケージ名を含む完全な関数名）
-- `filename`: ファイル名（パスを除いたファイル名のみ）
-- `fileline`: 行番号
-
-```json
-{
-  "timestamp": "2023-10-27T09:59:59.123456+09:00",
-  "level": "INFO",
-  "message": "アプリケーションが開始されました",
-  "funcname": "main.main",
-  "filename": "main.go",
-  "fileline": 15
-}
-```
-
-#### 使用例
+#### Context Logger Setup
 
 ```go
-package main
-
-import (
-    "context"
-    "github.com/zentooo/logspan/pkg/logger"
-)
-
-func main() {
-    // ソース情報を有効化
-    config := logger.DefaultConfig()
-    config.EnableSourceInfo = true
-    logger.Init(config)
-
-    // ダイレクトロガーでの使用
-    logger.D.Infof("アプリケーション開始")  // main.main, main.go, 行番号が記録される
-
-    // コンテキストロガーでの使用
-    ctx := context.Background()
-    contextLogger := logger.NewContextLogger()
-    ctx = logger.WithLogger(ctx, contextLogger)
-
-    processUser(ctx, "user123")
-    logger.FlushContext(ctx)
-}
-
-func processUser(ctx context.Context, userID string) {
-    logger.Infof(ctx, "ユーザー処理開始: %s", userID)  // main.processUser, main.go, 行番号が記録される
-
-    validateUser(ctx, userID)
-}
-
-func validateUser(ctx context.Context, userID string) {
-    logger.Debugf(ctx, "ユーザー検証中: %s", userID)  // main.validateUser, main.go, 行番号が記録される
-}
-```
-
-#### パフォーマンスに関する注意
-
-ソース情報の取得には `runtime.Caller()` を使用するため、わずかなパフォーマンスオーバーヘッドが発生します。本番環境では必要に応じて無効化することを検討してください：
-
-```go
-// 本番環境での設定例
-config := logger.Config{
-    MinLevel:         logger.InfoLevel,
-    EnableSourceInfo: false,  // 本番環境では無効化
-    Output:           logFile,
-}
-logger.Init(config)
-```
-
-#### デバッグ時の活用
-
-ソース情報機能は、特に以下の場面で有用です：
-
-- **デバッグ**: ログの出力元を素早く特定
-- **トラブルシューティング**: 問題の発生箇所を正確に把握
-- **コードレビュー**: ログの出力箇所を確認
-- **開発環境**: 詳細な情報でデバッグ効率を向上
-
-```go
-// 開発環境での設定例
-config := logger.Config{
-    MinLevel:         logger.DebugLevel,
-    EnableSourceInfo: true,   // 開発時は有効化
-    PrettifyJSON:     true,   // 読みやすい形式で出力
-    Output:           os.Stdout,
-}
-logger.Init(config)
-```
-
-### 4. コンテキスト操作
-
-#### コンテキストロガーの設定
-
-```go
-// コンテキストロガーの作成と設定
+// Create and configure context logger
 ctx := context.Background()
 contextLogger := logger.NewContextLogger()
 ctx = logger.WithLogger(ctx, contextLogger)
 
-// または、コンテキストから自動取得（存在しない場合は新規作成）
+// Or automatically retrieve from context (creates new if not exists)
 contextLogger := logger.FromContext(ctx)
 ```
 
-#### コンテキストフィールドの追加
+#### Adding Context Fields
 
 ```go
-// 単一フィールドの追加
+// Add single field
 logger.AddContextValue(ctx, "user_id", "12345")
 logger.AddContextValue(ctx, "session_id", "session-abc")
 
-// 複数フィールドの追加
+// Add multiple fields
 logger.AddContextValues(ctx, map[string]interface{}{
     "request_id": "req-67890",
     "ip_address": "192.168.1.1",
     "user_agent": "Mozilla/5.0...",
 })
 
-// 直接ロガーインスタンスを使用
+// Use logger instance directly
 contextLogger := logger.FromContext(ctx)
 contextLogger.AddContextValue("operation", "user_login")
 contextLogger.AddContextValues(map[string]interface{}{
@@ -273,86 +205,124 @@ contextLogger.AddContextValues(map[string]interface{}{
 })
 ```
 
-#### コンテキストロガーのAPI
+#### Context Logger API
 
 ```go
-// コンテキストを使用したログ記録
-logger.Infof(ctx, "ユーザー %s がログインしました", userID)
-logger.Debugf(ctx, "処理ステップ: %s", step)
-logger.Errorf(ctx, "処理中にエラーが発生: %v", err)
+// Log with context
+logger.Infof(ctx, "User %s logged in", userID)
+logger.Debugf(ctx, "Processing step: %s", step)
+logger.Errorf(ctx, "Error occurred during processing: %v", err)
 
-// ログの出力（集約されたログを一度に出力）
+// Output logs (flush aggregated logs at once)
 logger.FlushContext(ctx)
 ```
 
-### 5. ミドルウェア機構
+### 4. HTTP Middleware
 
-ログ処理パイプラインをカスタマイズできます：
-
-#### 基本的なミドルウェア
+Automatic log setup for web applications:
 
 ```go
-// カスタムミドルウェアの作成
+package main
+
+import (
+    "net/http"
+    "github.com/zentooo/logspan/pkg/http_middleware"
+    "github.com/zentooo/logspan/pkg/logger"
+)
+
+func main() {
+    mux := http.NewServeMux()
+
+    // Apply logging middleware
+    handler := http_middleware.LoggingMiddleware(mux)
+
+    mux.HandleFunc("/api/users", func(w http.ResponseWriter, r *http.Request) {
+        ctx := r.Context()
+
+        // Request information is automatically added
+        logger.Infof(ctx, "Fetching user list")
+
+        // Additional context information
+        logger.AddContextValue(ctx, "query_params", r.URL.Query())
+
+        // Processing...
+
+        logger.Infof(ctx, "User list fetch completed")
+        // FlushContext is called automatically
+    })
+
+    http.ListenAndServe(":8080", handler)
+}
+```
+
+### 5. Middleware Mechanism
+
+Customize the log processing pipeline:
+
+#### Basic Middleware
+
+```go
+// Create custom middleware
 func customMiddleware(entry *logger.LogEntry, next func(*logger.LogEntry)) {
-    // ログエントリの前処理
+    // Pre-process log entry
     entry.Message = "[CUSTOM] " + entry.Message
 
-    // 次のミドルウェアまたは最終処理を呼び出し
+    // Call next middleware or final processing
     next(entry)
 }
 
-// ミドルウェアの登録
+// Register middleware
 logger.AddMiddleware(customMiddleware)
 
-// ミドルウェアの管理
-logger.ClearMiddleware()                    // 全ミドルウェアをクリア
-count := logger.GetMiddlewareCount()        // ミドルウェア数を取得
+// Middleware management
+logger.ClearMiddleware()                    // Clear all middleware
+count := logger.GetMiddlewareCount()        // Get middleware count
 ```
 
-#### パスワードマスキングミドルウェア
+#### Password Masking Middleware
 
-LogSpanには、機密情報を自動的にマスクする組み込みミドルウェアが含まれています：
+LogSpan includes built-in middleware that automatically masks sensitive information:
 
 ```go
-// デフォルト設定でパスワードマスキングを有効化
+// Enable password masking with default settings
 passwordMasker := logger.NewPasswordMaskingMiddleware()
 logger.AddMiddleware(passwordMasker.Middleware())
 
-// カスタム設定でパスワードマスキング
+// Custom password masking configuration
 passwordMasker := logger.NewPasswordMaskingMiddleware().
-    WithMaskString("[REDACTED]").                           // マスク文字列をカスタマイズ
-    WithPasswordKeys([]string{"password", "secret"}).       // マスク対象キーを設定
-    AddPasswordKey("api_key").                              // 追加のキーを指定
-    AddPasswordPattern(regexp.MustCompile(`token=\w+`))     // カスタム正規表現パターン
+    WithMaskString("[REDACTED]").                           // Customize mask string
+    WithPasswordKeys([]string{"password", "secret"}).       // Set target keys
+    AddPasswordKey("api_key").                              // Add additional key
+    AddPasswordPattern(regexp.MustCompile(`token=\w+`))     // Custom regex pattern
 
 logger.AddMiddleware(passwordMasker.Middleware())
 
-// 使用例
+// Usage example
 logger.D.Infof("User login: username=john password=secret123 token=abc123")
-// 出力: "User login: username=john password=*** token=***"
+// Output: "User login: username=john password=*** token=***"
 ```
 
-##### デフォルトでマスクされるキーワード
+##### Default Masked Keywords
 - `password`, `passwd`, `pwd`, `pass`
 - `secret`, `token`, `key`, `auth`
 - `credential`, `credentials`, `api_key`
 - `access_token`, `refresh_token`
 
-##### サポートされるパターン
-- `key=value` 形式: `password=secret` → `password=***`
-- JSON形式: `"password":"secret"` → `"password":"***"`
-- カスタム正規表現パターン
+##### Supported Patterns
+- `key=value` format: `password=secret` → `password=***`
+- JSON format: `"password":"secret"` → `"password":"***"`
+- Custom regex patterns
 
-### 6. フォーマッター
+### 6. Formatters
 
-#### JSONフォーマッター（デフォルト）
+#### JSON Formatter (Default)
 
 ```go
 contextLogger := logger.NewContextLogger()
 contextLogger.SetFormatter(formatter.NewJSONFormatter())
 ```
 
-#### ContextFlattenフォーマッター
+#### Context Flatten Formatter
 
 ```go
 import "github.com/zentooo/logspan/pkg/formatter"
@@ -361,9 +331,9 @@ contextLogger := logger.NewContextLogger()
 contextLogger.SetFormatter(formatter.NewContextFlattenFormatter())
 ```
 
-## 📋 ログ出力形式
+## 📋 Log Output Formats
 
-### デフォルトJSON形式
+### Default JSON Format
 
 ```json
 {
@@ -381,7 +351,7 @@ contextLogger.SetFormatter(formatter.NewContextFlattenFormatter())
       {
         "timestamp": "2023-10-27T09:59:59.123456+09:00",
         "level": "INFO",
-        "message": "リクエスト処理を開始"
+        "message": "Request processing started"
       }
     ]
   },
@@ -391,39 +361,7 @@ contextLogger.SetFormatter(formatter.NewContextFlattenFormatter())
 }
 ```
 
-### ソース情報付きの出力形式
-
-`EnableSourceInfo: true` の場合、各ログエントリにソース情報が追加されます：
-
-```json
-{
-  "type": "request",
-  "context": {
-    "request_id": "req-12345",
-    "user_id": "user-67890"
-  },
-  "runtime": {
-    "severity": "INFO",
-    "startTime": "2023-10-27T09:59:58.123456+09:00",
-    "endTime": "2023-10-27T10:00:00.223456+09:00",
-    "elapsed": 150,
-    "lines": [
-      {
-        "timestamp": "2023-10-27T09:59:59.123456+09:00",
-        "level": "INFO",
-        "message": "リクエスト処理を開始",
-        "funcname": "main.processRequest",
-        "filename": "main.go",
-        "fileline": 42
-      }
-    ]
-  }
-}
-```
-
-### Context Flatten形式
-
-ContextFlattenフォーマッターを使用すると、contextフィールドがトップレベルに展開されます：
+### Context Flatten Format
 
 ```json
 {
@@ -439,40 +377,40 @@ ContextFlattenフォーマッターを使用すると、contextフィールド�
       {
         "timestamp": "2023-10-27T09:59:59.123456+09:00",
         "level": "INFO",
-        "message": "リクエスト処理を開始",
-        "funcname": "main.processRequest",
-        "filename": "main.go",
-        "fileline": 42
+        "message": "Request processing started"
       }
     ]
+  },
+  "config": {
+    "elapsedUnit": "ms"
   }
 }
 ```
 
-## 🔧 設定オプション
+## 🔧 Configuration Options
 
-### Config構造体
+### Config Structure
 
 ```go
 type Config struct {
-    // 最小ログレベル
+    // Minimum log level
     MinLevel LogLevel
 
-    // 出力先
+    // Output destination
     Output io.Writer
 
-    // ソースファイル情報の有効化
+    // Enable source file information
     EnableSourceInfo bool
 
-    // JSON出力の整形（インデント）を有効化
+    // Enable JSON output formatting (indentation)
     PrettifyJSON bool
 
-    // コンテキストロガーの最大エントリ数（0 = 制限なし）
+    // Maximum entries for context logger (0 = no limit)
     MaxLogEntries int
 }
 ```
 
-### デフォルト設定
+### Default Configuration
 
 ```go
 config := logger.DefaultConfig()
@@ -483,47 +421,47 @@ config := logger.DefaultConfig()
 // MaxLogEntries: 1000
 ```
 
-### カスタム設定例
+### Custom Configuration Examples
 
 ```go
-// 開発環境向け設定（整形されたJSON出力）
+// Development environment configuration (formatted JSON output)
 logger.Init(logger.Config{
     MinLevel:         logger.DebugLevel,
     Output:           os.Stdout,
     EnableSourceInfo: true,
-    PrettifyJSON:     true,  // 読みやすい整形されたJSON
-    MaxLogEntries:    500,   // 500エントリで自動フラッシュ
+    PrettifyJSON:     true,  // Pretty-formatted JSON for readability
+    MaxLogEntries:    500,   // Auto-flush every 500 entries
 })
 
-// 本番環境向け設定（コンパクトなJSON出力）
+// Production environment configuration (compact JSON output)
 logger.Init(logger.Config{
     MinLevel:         logger.InfoLevel,
     Output:           logFile,
     EnableSourceInfo: false,
-    PrettifyJSON:     false,  // コンパクトなJSON
-    MaxLogEntries:    1000,   // 1000エントリで自動フラッシュ
+    PrettifyJSON:     false,  // Compact JSON
+    MaxLogEntries:    1000,   // Auto-flush every 1000 entries
 })
 
-// メモリ効率重視設定
+// Memory-efficient configuration
 logger.Init(logger.Config{
     MinLevel:      logger.InfoLevel,
     Output:        logFile,
     PrettifyJSON:  false,
-    MaxLogEntries: 100,  // 頻繁な自動フラッシュでメモリ使用量を抑制
+    MaxLogEntries: 100,  // Frequent auto-flush to reduce memory usage
 })
 
-// 制限なし設定（手動フラッシュのみ）
+// No limit configuration (manual flush only)
 logger.Init(logger.Config{
     MinLevel:      logger.InfoLevel,
     Output:        logFile,
-    MaxLogEntries: 0,  // 自動フラッシュを無効化
+    MaxLogEntries: 0,  // Disable auto-flush
 })
 ```
 
-### 設定の確認
+### Configuration Verification
 
 ```go
-// ロガーが初期化されているかチェック
+// Check if logger is initialized
 if logger.IsInitialized() {
     config := logger.GetConfig()
     fmt.Printf("Current log level: %s\n", config.MinLevel.String())
@@ -532,18 +470,18 @@ if logger.IsInitialized() {
 }
 ```
 
-## 🚀 メモリ最適化
+## 🚀 Memory Optimization
 
-### 自動フラッシュ機能
+### Auto-Flush Feature
 
-LogSpanは、メモリ使用量を制御するための自動フラッシュ機能を提供します：
+LogSpan provides an auto-flush feature to control memory usage:
 
-#### 基本的な動作
+#### Basic Operation
 
 ```go
-// 自動フラッシュの設定
+// Configure auto-flush
 logger.Init(logger.Config{
-    MaxLogEntries: 100, // 100エントリで自動フラッシュ
+    MaxLogEntries: 100, // Auto-flush every 100 entries
 })
 
 ctx := context.Background()
@@ -552,31 +490,31 @@ ctx = logger.WithLogger(ctx, contextLogger)
 
 logger.AddContextValue(ctx, "request_id", "req-123")
 
-// 100エントリに達すると自動的にフラッシュされる
+// Auto-flush occurs when 100 entries are reached
 for i := 0; i < 250; i++ {
     logger.Infof(ctx, "Processing item %d", i)
 }
-// 結果: 2回の自動フラッシュ（100エントリ、200エントリ時点）
-// 残り50エントリは手動フラッシュが必要
+// Result: 2 auto-flushes (at 100 and 200 entries)
+// Remaining 50 entries need manual flush
 
-logger.FlushContext(ctx) // 残りのエントリを出力
+logger.FlushContext(ctx) // Output remaining entries
 ```
 
-#### 自動フラッシュの特徴
+#### Auto-Flush Features
 
-- **エントリカウント**: ログレベルフィルターを通過したエントリのみがカウントされます
-- **バッチ処理**: 各自動フラッシュは独立したログバッチとして出力されます
-- **コンテキスト保持**: コンテキストフィールドは自動フラッシュ後も保持されます
-- **メモリ解放**: フラッシュ後、エントリは自動的にクリアされてメモリが解放されます
+- **Entry Counting**: Only entries that pass the log level filter are counted
+- **Batch Processing**: Each auto-flush outputs as an independent log batch
+- **Context Preservation**: Context fields are preserved after auto-flush
+- **Memory Release**: Entries are automatically cleared after flush to free memory
 
-#### メモリ効率的な使用例
+#### Memory-Efficient Usage Example
 
 ```go
-// 大量ログ処理での設定例
+// Configuration for large-scale log processing
 logger.Init(logger.Config{
     MinLevel:      logger.InfoLevel,
-    MaxLogEntries: 50,    // 小さなバッチサイズ
-    PrettifyJSON:  false, // コンパクト出力
+    MaxLogEntries: 50,    // Small batch size
+    PrettifyJSON:  false, // Compact output
 })
 
 ctx := context.Background()
@@ -585,161 +523,117 @@ ctx = logger.WithLogger(ctx, contextLogger)
 
 logger.AddContextValue(ctx, "batch_id", "batch-001")
 
-// 大量データの処理
+// Process large amount of data
 for i := 0; i < 10000; i++ {
     logger.Infof(ctx, "Processing record %d", i)
 
     if i%1000 == 0 {
-        // 進捗をコンテキストに追加
+        // Add progress to context
         logger.AddContextValue(ctx, "progress", fmt.Sprintf("%d/10000", i))
     }
 }
-// 自動フラッシュにより、メモリ使用量は一定に保たれる
+// Memory usage remains constant due to auto-flush
 
-logger.FlushContext(ctx) // 最後の残りエントリを出力
+logger.FlushContext(ctx) // Output final remaining entries
 ```
 
-#### 無効化オプション
+#### Disable Option
 
 ```go
-// 自動フラッシュを無効にする（従来の動作）
+// Disable auto-flush (traditional behavior)
 logger.Init(logger.Config{
-    MaxLogEntries: 0, // 0 = 制限なし
+    MaxLogEntries: 0, // 0 = no limit
 })
 
-// この場合、手動でFlushContext()を呼ぶまでエントリが蓄積される
+// In this case, entries accumulate until manual FlushContext() call
 ```
 
-## 📚 サンプルコード
+## 📚 Sample Code
 
-詳細なサンプルコードは `examples/` ディレクトリにあります：
+Detailed sample code is available in the `examples/` directory:
 
 ```bash
-# ダイレクトロガーのサンプル
+# Direct logger sample
 go run examples/direct_logger/main.go
 
-# コンテキストロガーのサンプル
+# Context logger sample
 go run examples/context_logger/main.go
 
-# 自動フラッシュ機能のサンプル
+# Auto-flush feature sample
 go run examples/auto_flush/main.go
 
-# HTTPミドルウェアのサンプル
+# HTTP middleware sample
 go run examples/http_middleware_example.go
 ```
 
-## 🧪 テスト
+## 🧪 Testing
 
 ```bash
-# 全テストの実行
+# Run all tests
 go test ./...
 
-# カバレッジ付きテスト
+# Test with coverage
 go test -cover ./...
 
-# 詳細なテスト出力
+# Verbose test output
 go test -v ./...
-
-# カバレッジレポートの生成
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out -o coverage.html
 ```
 
-### テストカバレッジ
+## 🏗️ Architecture
 
-LogSpanは高いテストカバレッジを維持しており、以下のような包括的なテストを提供しています：
-
-#### 主要テストファイル
-- **base_logger_test.go**: 共通ベースロガーの機能テスト
-- **config_test.go**: 設定管理機能のテスト
-- **context_test.go**: コンテキスト関連機能のテスト
-- **context_logger_test.go**: コンテキストロガーの包括的テスト
-- **direct_logger_test.go**: ダイレクトロガーの包括的テスト
-- **middleware_manager_test.go**: ミドルウェア管理機能のテスト
-- **formatter_utils_test.go**: フォーマット関連ユーティリティのテスト
-
-#### テストの特徴
-- **並行処理テスト**: goroutineセーフティの検証
-- **エラーケーステスト**: 異常系の動作確認
-- **カバレッジ最適化**: 重要な関数の100%カバレッジ
-- **統合テスト**: 実際の使用パターンでの動作確認
-
-## 🏗️ アーキテクチャ
-
-### パッケージ構成
+### Package Structure
 
 ```
 pkg/
-├── logger/                          # メインロガーパッケージ
-│   ├── logger.go                   # コアインターフェースとグローバルインスタンス
-│   ├── base_logger.go              # 共通ベースロガー（共通機能の実装）
-│   ├── context_logger.go           # コンテキストロガー実装
-│   ├── direct_logger.go            # ダイレクトロガー実装
-│   ├── middleware_manager.go       # グローバルミドルウェア管理
-│   ├── formatter_utils.go          # フォーマット関連ユーティリティ
-│   ├── config.go                   # 設定管理
-│   ├── entry.go                    # ログエントリ構造
-│   ├── middleware.go               # ミドルウェア機構
-│   ├── context.go                  # コンテキストヘルパー
-│   ├── level.go                    # ログレベル定義
-│   └── password_masking_middleware.go # パスワードマスキング
-├── formatter/                       # フォーマッター
-│   ├── interface.go                # フォーマッターインターフェース
-│   ├── json_formatter.go           # JSONフォーマッター
-│   └── context_flatten_formatter.go # ContextFlattenフォーマッター
-├── http_middleware/                 # HTTPミドルウェア
-│   └── middleware.go               # HTTPリクエストロギング
-└── examples/                        # 使用例
-    ├── context_logger/             # コンテキストロガー例
-    ├── direct_logger/              # ダイレクトロガー例
-    ├── context_flatten_formatter/  # ContextFlattenフォーマッター例
-    └── http_middleware_example.go  # HTTPミドルウェア例
+├── logger/                          # Main logger package
+│   ├── logger.go                   # Core interface and API
+│   ├── context_logger.go           # Context logger implementation
+│   ├── direct_logger.go            # Direct logger implementation
+│   ├── config.go                   # Configuration management
+│   ├── entry.go                    # Log entry structure
+│   ├── middleware.go               # Middleware mechanism
+│   ├── context.go                  # Context helpers
+│   ├── level.go                    # Log level definitions
+│   └── password_masking_middleware.go # Password masking
+├── formatter/                       # Formatters
+│   ├── interface.go                # Formatter interface
+│   ├── json_formatter.go           # JSON formatter
+│   └── context_flatten_formatter.go # Context flatten formatter
+├── http_middleware/                 # HTTP middleware
+│   └── middleware.go               # HTTP request logging
+└── examples/                        # Usage examples
+    ├── context_logger/             # Context logger examples
+    ├── direct_logger/              # Direct logger examples
+    ├── context_flatten_formatter/  # Context flatten formatter examples
+    └── http_middleware_example.go  # HTTP middleware examples
 ```
 
-### 設計原則
+### Design Principles
 
-1. **シンプルなAPI**: 直感的で使いやすいインターフェース
-2. **柔軟性**: 様々な用途に対応できる設計
-3. **拡張性**: ミドルウェアによるカスタマイズ
-4. **パフォーマンス**: 効率的なログ処理
-5. **並行処理安全**: goroutineセーフな実装
-6. **責任の分離**: 機能別にファイルを分離し、保守性を向上
+1. **Simple API**: Intuitive and easy-to-use interface
+2. **Flexibility**: Design that accommodates various use cases
+3. **Extensibility**: Customization through middleware
+4. **Performance**: Efficient log processing
+5. **Concurrency Safety**: Goroutine-safe implementation
 
-### アーキテクチャの改善点
+## 🤝 Contributing
 
-#### コード重複の削除
-- **BaseLogger**: `DirectLogger`と`ContextLogger`の共通機能を`BaseLogger`に統合
-- **共通メソッド**: `SetOutput`, `SetLevel`, `SetFormatter`などの重複実装を削除
-- **一貫性**: mutex命名の統一とスレッドセーフティの向上
+1. Fork this repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Create a Pull Request
 
-#### 責任の明確化
-- **middleware_manager.go**: グローバルミドルウェア管理機能を独立したファイルに分離
-- **formatter_utils.go**: フォーマット関連ユーティリティを独立したファイルに分離
-- **logger.go**: コアインターフェースとグローバルインスタンスのみに集中
+## 📄 License
 
-#### テストカバレッジの向上
-- **新しいテストファイル**: `base_logger_test.go`, `config_test.go`, `context_test.go`などを追加
-- **カバレッジ改善**: 未カバーだった関数（`IsInitialized`, `AddContextValues`など）をテスト対象に追加
-- **並行テスト**: 並行処理の安全性を検証するテストを強化
+This project is released under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## 🤝 コントリビューション
-
-1. このリポジトリをフォーク
-2. フィーチャーブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. 変更をコミット (`git commit -m 'Add amazing feature'`)
-4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
-5. プルリクエストを作成
-
-## 📄 ライセンス
-
-このプロジェクトはMITライセンスの下で公開されています。詳細は [LICENSE](LICENSE) ファイルを参照してください。
-
-## 🔗 関連リンク
+## 🔗 Related Links
 
 - [Go Documentation](https://pkg.go.dev/github.com/zentooo/logspan)
 - [Examples](./examples/)
 - [Design Document](./design.md)
 
-## 📞 サポート
+## 📞 Support
 
-質問や問題がある場合は、[Issues](https://github.com/zentooo/logspan/issues) を作成してください。
+If you have questions or issues, please create an [Issue](https://github.com/zentooo/logspan/issues).
