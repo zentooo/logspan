@@ -9,6 +9,9 @@ type LogEntry struct {
 	Timestamp time.Time `json:"timestamp"`
 	Level     string    `json:"level"`
 	Message   string    `json:"message"`
+	Funcname  string    `json:"funcname,omitempty"`
+	Filename  string    `json:"filename,omitempty"`
+	Fileline  int       `json:"fileline,omitempty"`
 }
 
 // LogOutput represents the complete log output structure

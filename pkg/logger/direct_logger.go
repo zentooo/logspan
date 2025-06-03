@@ -88,6 +88,16 @@ func (l *DirectLogger) logf(level LogLevel, format string, args ...interface{}) 
 		Message:   fmt.Sprintf(format, args...),
 	}
 
+	// Add source information if enabled
+	config := GetConfig()
+	if config.EnableSourceInfo {
+		// Skip levels: getSourceInfo(0) -> logf(1) -> Infof/Debugf/etc(2) -> actual caller(3)
+		sourceInfo := getSourceInfo(3)
+		entry.Funcname = sourceInfo.Funcname
+		entry.Filename = sourceInfo.Filename
+		entry.Fileline = sourceInfo.Fileline
+	}
+
 	// Process through global middleware chain
 	processWithGlobalMiddleware(entry, func(processedEntry *LogEntry) {
 		// Use the formatter (default or explicitly set)

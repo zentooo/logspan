@@ -96,6 +96,9 @@ func formatLogOutput(entries []*LogEntry, contextFields map[string]interface{}, 
 			Timestamp: entry.Timestamp,
 			Level:     entry.Level,
 			Message:   entry.Message,
+			Funcname:  entry.Funcname,
+			Filename:  entry.Filename,
+			Fileline:  entry.Fileline,
 		}
 	}
 

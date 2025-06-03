@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -76,6 +78,36 @@ func (l *ContextLogger) addEntry(level LogLevel, message string) {
 		Timestamp: time.Now(),
 		Level:     level.String(),
 		Message:   message,
+	}
+
+	// Add source information if enabled
+	config := GetConfig()
+	if config.EnableSourceInfo {
+		// Determine the appropriate skip level by examining the call stack
+		skipLevel := 3 // Default for direct ContextLogger method calls
+
+		// Check the call stack to see if we're being called through context.go functions
+		for i := 2; i <= 5; i++ {
+			if pc, _, _, ok := runtime.Caller(i); ok {
+				if fn := runtime.FuncForPC(pc); fn != nil {
+					funcName := fn.Name()
+					// If we find a context.go function in the stack, use skip level 4
+					if strings.Contains(funcName, "/pkg/logger.Infof") ||
+						strings.Contains(funcName, "/pkg/logger.Debugf") ||
+						strings.Contains(funcName, "/pkg/logger.Warnf") ||
+						strings.Contains(funcName, "/pkg/logger.Errorf") ||
+						strings.Contains(funcName, "/pkg/logger.Criticalf") {
+						skipLevel = 4
+						break
+					}
+				}
+			}
+		}
+
+		sourceInfo := getSourceInfo(skipLevel)
+		entry.Funcname = sourceInfo.Funcname
+		entry.Filename = sourceInfo.Filename
+		entry.Fileline = sourceInfo.Fileline
 	}
 
 	// Process through global middleware chain

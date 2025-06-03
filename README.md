@@ -6,6 +6,7 @@ LogSpanは、Go言語向けの構造化ロギングライブラリです。HTTP�
 
 - **デュアルモードロギング**: コンテキストベースとダイレクトの2つのロギングモード
 - **構造化ログ出力**: JSON形式での一貫したログ出力
+- **ソース情報取得**: 関数名、ファイル名、行番号の自動取得（デバッグ支援）
 - **ミドルウェア機構**: ログ処理パイプラインのカスタマイズが可能
 - **コンテキスト展開**: contextフィールドをトップレベルに展開するフォーマッター
 - **HTTPミドルウェア**: Webアプリケーションでの自動ログ設定
@@ -84,7 +85,9 @@ func init() {
     config := logger.Config{
         MinLevel:         logger.DebugLevel,
         Output:           os.Stdout,
-        EnableSourceInfo: true,
+        EnableSourceInfo: true,  // ソース情報（関数名、ファイル名、行番号）を有効化
+        PrettifyJSON:     true,  // 読みやすいJSON形式で出力
+        MaxLogEntries:    1000,  // 1000エントリで自動フラッシュ
     }
     logger.Init(config)
 }
@@ -122,7 +125,118 @@ logger.D.Errorf("エラー: %v", err)
 logger.D.Criticalf("重大なエラー: %v", criticalErr)
 ```
 
-### 3. コンテキスト操作
+### 3. ソース情報機能
+
+LogSpanは、デバッグやトラブルシューティングを支援するため、ログエントリにソースコード情報を自動的に追加する機能を提供します。
+
+#### ソース情報の有効化
+
+```go
+// グローバル設定でソース情報を有効化
+config := logger.Config{
+    MinLevel:         logger.DebugLevel,
+    EnableSourceInfo: true,  // ソース情報を有効化
+    Output:           os.Stdout,
+}
+logger.Init(config)
+
+// ログ出力時に自動的にソース情報が追加される
+logger.D.Infof("アプリケーションが開始されました")
+```
+
+#### 出力されるソース情報
+
+ソース情報が有効な場合、各ログエントリに以下の情報が自動的に追加されます：
+
+- `funcname`: 関数名（パッケージ名を含む完全な関数名）
+- `filename`: ファイル名（パスを除いたファイル名のみ）
+- `fileline`: 行番号
+
+```json
+{
+  "timestamp": "2023-10-27T09:59:59.123456+09:00",
+  "level": "INFO",
+  "message": "アプリケーションが開始されました",
+  "funcname": "main.main",
+  "filename": "main.go",
+  "fileline": 15
+}
+```
+
+#### 使用例
+
+```go
+package main
+
+import (
+    "context"
+    "github.com/zentooo/logspan/pkg/logger"
+)
+
+func main() {
+    // ソース情報を有効化
+    config := logger.DefaultConfig()
+    config.EnableSourceInfo = true
+    logger.Init(config)
+
+    // ダイレクトロガーでの使用
+    logger.D.Infof("アプリケーション開始")  // main.main, main.go, 行番号が記録される
+
+    // コンテキストロガーでの使用
+    ctx := context.Background()
+    contextLogger := logger.NewContextLogger()
+    ctx = logger.WithLogger(ctx, contextLogger)
+
+    processUser(ctx, "user123")
+    logger.FlushContext(ctx)
+}
+
+func processUser(ctx context.Context, userID string) {
+    logger.Infof(ctx, "ユーザー処理開始: %s", userID)  // main.processUser, main.go, 行番号が記録される
+
+    validateUser(ctx, userID)
+}
+
+func validateUser(ctx context.Context, userID string) {
+    logger.Debugf(ctx, "ユーザー検証中: %s", userID)  // main.validateUser, main.go, 行番号が記録される
+}
+```
+
+#### パフォーマンスに関する注意
+
+ソース情報の取得には `runtime.Caller()` を使用するため、わずかなパフォーマンスオーバーヘッドが発生します。本番環境では必要に応じて無効化することを検討してください：
+
+```go
+// 本番環境での設定例
+config := logger.Config{
+    MinLevel:         logger.InfoLevel,
+    EnableSourceInfo: false,  // 本番環境では無効化
+    Output:           logFile,
+}
+logger.Init(config)
+```
+
+#### デバッグ時の活用
+
+ソース情報機能は、特に以下の場面で有用です：
+
+- **デバッグ**: ログの出力元を素早く特定
+- **トラブルシューティング**: 問題の発生箇所を正確に把握
+- **コードレビュー**: ログの出力箇所を確認
+- **開発環境**: 詳細な情報でデバッグ効率を向上
+
+```go
+// 開発環境での設定例
+config := logger.Config{
+    MinLevel:         logger.DebugLevel,
+    EnableSourceInfo: true,   // 開発時は有効化
+    PrettifyJSON:     true,   // 読みやすい形式で出力
+    Output:           os.Stdout,
+}
+logger.Init(config)
+```
+
+### 4. コンテキスト操作
 
 #### コンテキストロガーの設定
 
@@ -169,44 +283,6 @@ logger.Errorf(ctx, "処理中にエラーが発生: %v", err)
 
 // ログの出力（集約されたログを一度に出力）
 logger.FlushContext(ctx)
-```
-
-### 4. HTTPミドルウェア
-
-Webアプリケーションでの自動ログ設定：
-
-```go
-package main
-
-import (
-    "net/http"
-    "github.com/zentooo/logspan/pkg/http_middleware"
-    "github.com/zentooo/logspan/pkg/logger"
-)
-
-func main() {
-    mux := http.NewServeMux()
-
-    // ログミドルウェアの適用
-    handler := http_middleware.LoggingMiddleware(mux)
-
-    mux.HandleFunc("/api/users", func(w http.ResponseWriter, r *http.Request) {
-        ctx := r.Context()
-
-        // リクエスト情報は自動的に追加される
-        logger.Infof(ctx, "ユーザー一覧を取得中")
-
-        // 追加のコンテキスト情報
-        logger.AddContextValue(ctx, "query_params", r.URL.Query())
-
-        // 処理...
-
-        logger.Infof(ctx, "ユーザー一覧の取得が完了")
-        // FlushContext は自動的に呼ばれる
-    })
-
-    http.ListenAndServe(":8080", handler)
-}
 ```
 
 ### 5. ミドルウェア機構
@@ -315,7 +391,39 @@ contextLogger.SetFormatter(formatter.NewContextFlattenFormatter())
 }
 ```
 
+### ソース情報付きの出力形式
+
+`EnableSourceInfo: true` の場合、各ログエントリにソース情報が追加されます：
+
+```json
+{
+  "type": "request",
+  "context": {
+    "request_id": "req-12345",
+    "user_id": "user-67890"
+  },
+  "runtime": {
+    "severity": "INFO",
+    "startTime": "2023-10-27T09:59:58.123456+09:00",
+    "endTime": "2023-10-27T10:00:00.223456+09:00",
+    "elapsed": 150,
+    "lines": [
+      {
+        "timestamp": "2023-10-27T09:59:59.123456+09:00",
+        "level": "INFO",
+        "message": "リクエスト処理を開始",
+        "funcname": "main.processRequest",
+        "filename": "main.go",
+        "fileline": 42
+      }
+    ]
+  }
+}
+```
+
 ### Context Flatten形式
+
+ContextFlattenフォーマッターを使用すると、contextフィールドがトップレベルに展開されます：
 
 ```json
 {
@@ -331,12 +439,12 @@ contextLogger.SetFormatter(formatter.NewContextFlattenFormatter())
       {
         "timestamp": "2023-10-27T09:59:59.123456+09:00",
         "level": "INFO",
-        "message": "リクエスト処理を開始"
+        "message": "リクエスト処理を開始",
+        "funcname": "main.processRequest",
+        "filename": "main.go",
+        "fileline": 42
       }
     ]
-  },
-  "config": {
-    "elapsedUnit": "ms"
   }
 }
 ```
