@@ -10,7 +10,7 @@ import (
 
 // ContextLogger implements context-based logging with log aggregation
 type ContextLogger struct {
-	BaseLogger
+	*BaseLogger
 	entries    []*LogEntry
 	fields     map[string]interface{}
 	startTime  time.Time
@@ -27,7 +27,7 @@ func NewContextLogger() *ContextLogger {
 	base.minLevel = config.MinLevel
 
 	return &ContextLogger{
-		BaseLogger: base,
+		BaseLogger: &base,
 		entries:    make([]*LogEntry, 0),
 		fields:     make(map[string]interface{}),
 		startTime:  time.Now(),

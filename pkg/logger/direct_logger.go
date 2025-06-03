@@ -8,7 +8,7 @@ import (
 
 // DirectLogger implements the Logger interface for direct logging without context
 type DirectLogger struct {
-	BaseLogger
+	*BaseLogger
 }
 
 // NewDirectLogger creates a new DirectLogger instance
@@ -16,7 +16,7 @@ func NewDirectLogger() *DirectLogger {
 	base := newBaseLogger()
 	base.output = os.Stdout // Set default output for DirectLogger
 	return &DirectLogger{
-		BaseLogger: base,
+		BaseLogger: &base,
 	}
 }
 
