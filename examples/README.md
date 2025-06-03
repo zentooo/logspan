@@ -9,7 +9,7 @@
 go run examples/direct_logger/main.go
 ```
 
-Direct Loggerは即座にログを出力する機能を提供します。ログレベルによるフィルタリングや基本的なフォーマット機能をテストできます。
+Direct Loggerは即座にログを出力する機能を提供します。この例では、一般的な使用方法（`logger.D`を使用）と高度な使用方法（`NewDirectLogger()`を使用）の両方を示しています。通常は`logger.D`を使用することを推奨します。
 
 ### Context Logger Example
 ```bash

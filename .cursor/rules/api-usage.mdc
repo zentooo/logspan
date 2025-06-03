@@ -66,18 +66,24 @@ logger.FlushContext(ctx)
 
 ### Direct Logger
 ```go
-// Direct logging without context (global instance)
+// Direct logging without context (global instance - RECOMMENDED)
 logger.D.Infof(format string, args ...interface{})
 logger.D.Debugf(format string, args ...interface{})
 logger.D.Warnf(format string, args ...interface{})
 logger.D.Errorf(format string, args ...interface{})
 logger.D.Criticalf(format string, args ...interface{})
 
-// Create custom direct logger
+// Create custom direct logger (for advanced scenarios)
 directLogger := logger.NewDirectLogger()
 directLogger.SetLevel(logger.WarnLevel)
 directLogger.SetLevelFromString("ERROR")
 directLogger.SetOutput(logFile)
+
+// Use NewDirectLogger() when you need:
+// - Different log levels for different loggers
+// - Different output destinations
+// - Different formatters
+// - Multiple logger instances with different configurations
 ```
 
 ## Error Handling

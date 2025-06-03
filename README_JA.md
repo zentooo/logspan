@@ -181,10 +181,22 @@ logger.Init(logger.Config{
 #### 個別ロガーの設定
 
 ```go
-// ダイレクトロガーの設定
+// ダイレクトロガーの基本的な使用（推奨）
+// グローバルインスタンス logger.D を使用
+logger.D.Infof("アプリケーションが開始されました")
+logger.D.Errorf("エラーが発生しました: %v", err)
+
+// ダイレクトロガーの高度な設定（特殊なケースのみ）
+// カスタム設定が必要な場合のみ NewDirectLogger() を使用
 directLogger := logger.NewDirectLogger()
 directLogger.SetLevelFromString("WARN")
 directLogger.SetOutput(logFile)
+
+// NewDirectLogger() を使用する場合：
+// - 異なるログレベルが必要
+// - 異なる出力先が必要
+// - 異なるフォーマッターが必要
+// - 複数のロガーインスタンスが必要
 
 // コンテキストロガーの設定
 contextLogger := logger.NewContextLogger()
