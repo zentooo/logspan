@@ -18,10 +18,10 @@ loggerパッケージ内のコードを分析し、整理・リファクタリ�
 - [x] 2.4 テストコードの整理が必要な箇所の特定
 
 ### 3. 改善案の検討
-- [ ] 3.1 共通化できるコードの抽出
-- [ ] 3.2 ファイル分割・統合の検討
-- [ ] 3.3 命名の統一案の作成
-- [ ] 3.4 構造改善案の作成
+- [x] 3.1 共通化できるコードの抽出
+- [x] 3.2 ファイル分割・統合の検討
+- [x] 3.3 命名の統一案の作成
+- [x] 3.4 構造改善案の作成
 
 ### 4. 実装
 - [ ] 4.1 優先度の高い改善から実装
@@ -30,7 +30,42 @@ loggerパッケージ内のコードを分析し、整理・リファクタリ�
 
 ## 進捗状況
 - 開始日: 2024年12月19日
-- 現在のフェーズ: 改善案の検討開始
+- 現在のフェーズ: 実装フェーズ開始
+- 完了したフェーズ: 現状分析、問題点特定、改善案検討
+
+## 3.1 共通化できるコードの抽出 - 完了
+
+### 実装内容
+1. **BaseLogger構造体の導入**
+   - 新ファイル: `pkg/logger/base_logger.go`
+   - 共通フィールド: `output`, `minLevel`, `formatter`, `mutex`
+   - 共通メソッド: `SetOutput()`, `SetLevel()`, `SetFormatter()`, `SetLevelFromString()`, `isLevelEnabled()`
+   - スレッドセーフなゲッター: `getOutput()`, `getFormatter()`
+
+2. **DirectLoggerの修正**
+   - BaseLoggerを埋め込み構造として使用
+   - 重複メソッドを削除（SetOutput, SetLevel, SetFormatter, SetLevelFromString, isLevelEnabled）
+   - mutexの名前を`mu`から`mutex`に統一
+
+3. **ContextLoggerの修正**
+   - BaseLoggerを埋め込み構造として使用
+   - 重複メソッドを削除（SetOutput, SetLevel, SetFormatter, isLevelEnabled）
+   - mutexの名前を`mu`から`mutex`に統一
+
+4. **テストの追加**
+   - 新ファイル: `pkg/logger/base_logger_test.go`
+   - BaseLoggerの全機能をテスト
+   - スレッドセーフティのテストも含む
+
+### 効果
+- **コード重複の削減**: 約50行の重複コードを削除
+- **保守性の向上**: 共通機能の変更が一箇所で済む
+- **一貫性の向上**: mutexの命名を統一
+- **テストカバレッジの向上**: BaseLoggerの独立したテスト
+
+### テスト結果
+- 全てのテストが通過（既存 + 新規BaseLoggerテスト）
+- 既存機能に影響なし
 
 ## 1.1 各ファイルの役割と責任の整理結果
 
@@ -82,91 +117,315 @@ loggerパッケージ内のコードを分析し、整理・リファクタリ�
 - **レベル定数**: `DebugLevel`, `InfoLevel`, etc. - 全て統一
 
 ### 改善の余地がある命名
-- **内部メソッド**: `isLevelEnabled` vs `IsLevelEnabled`（public/private の使い分け）
-- **構造体フィールド**: 一部で略語使用（`mu` vs `mutex`）
+- **内部メソッド**: `isLevelEnabled`
 
-## 1.4 パッケージ構造の妥当性検証結果
+## 3.2 ファイル分割・統合の検討 - 完了
 
-### 現在の構造
-- **pkg/logger**: 16ファイル（10実装 + 6テスト）
-- **pkg/formatter**: 6ファイル（4実装 + 2テスト）
-- **pkg/http_middleware**: 3ファイル（2実装 + 1テスト）
+### 現在のlogger.goの責任分析
+1. **Loggerインターフェース定義** - 適切
+2. **グローバルミドルウェア管理** - 分離すべき
+3. **フォーマット処理** - 分離すべき
+4. **グローバルロガーインスタンス** - 適切
+5. **デフォルトフォーマッター作成** - 分離すべき
 
-### 構造の評価
-- **適切な分離**: formatter と http_middleware は独立したパッケージとして適切
-- **logger パッケージの肥大化**: 16ファイルは多めだが、機能的には妥当
-- **テストカバレッジ**: 各主要機能にテストが存在
+### 分割提案
 
-## 2.1 重複コードの洗い出し
+#### 1. middleware_manager.go（新規作成）
+**責任**: グローバルミドルウェア管理
+**移動する機能**:
+- `globalMiddlewareChain`, `middlewareMutex`, `middlewareOnce`
+- `ensureMiddlewareChain()`
+- `AddMiddleware()`, `ClearMiddleware()`, `GetMiddlewareCount()`
+- `processWithGlobalMiddleware()`
 
-### 高優先度の重複（共通化すべき）
-1. **BaseLogger 構造体の導入候補**
-   - `output io.Writer`
-   - `minLevel LogLevel`
-   - `formatter formatter.Formatter`
-   - `mu sync.Mutex`
-   - `SetOutput()`, `SetLevel()`, `SetFormatter()` メソッド
+**理由**: ミドルウェア管理は独立した責任として分離すべき
 
-2. **共通ユーティリティメソッド**
-   - `isLevelEnabled()` - 両ロガーで同じ実装
-   - ソース情報取得ロジック - 異なるskipレベルだが基本パターンは同じ
+#### 2. formatter_utils.go（新規作成）
+**責任**: フォーマット関連のユーティリティ
+**移動する機能**:
+- `createDefaultFormatter()`
+- `formatLogOutput()`
 
-### 中優先度の重複（検討が必要）
-1. **ログメソッドのパターン**
-   - `fmt.Sprintf(format, args...)` の使用
-   - レベルチェック → エントリ作成 → 処理のフロー
+**理由**: フォーマット処理は複数のロガーで使用される共通機能
 
-## 2.2 責任の分離が不十分な箇所の特定
+#### 3. logger.go（残存）
+**責任**: コアインターフェースとグローバルインスタンス
+**残す機能**:
+- `Logger`インターフェース定義
+- `D`グローバルロガーインスタンス
 
-### 問題のある責任の混在
-1. **logger.go の責任過多**
-   - ミドルウェア管理（グローバル状態）
-   - フォーマット処理（formatLogOutput）
-   - デフォルトフォーマッター作成（createDefaultFormatter）
-   - グローバルロガーインスタンス（D）
+### 統合検討
 
-2. **config.go の設定更新処理**
-   - グローバル設定管理
-   - DirectLogger の直接操作（型アサーション）
-   - フォーマッター作成の重複（createDefaultFormatterと同じロジック）
+#### テストファイルの統合は不要
+- 各テストファイルは適切なサイズ（200-450行）
+- 機能別に分離されており、保守性が高い
+- 統合するとテストの可読性が低下する
 
-3. **フォーマット処理の分散**
-   - logger.go: formatLogOutput関数
-   - DirectLogger/ContextLogger: 各々でformatLogOutputを呼び出し
-   - 変換ロジック（logger.LogEntry → formatter.LogEntry）の重複
+#### 小さなファイルの統合検討
+- `entry.go`（48行）と`level.go`（95行）は独立性が高く、統合不要
+- `context.go`（64行）は独立した責任を持ち、統合不要
 
-## 2.3 命名の不一致や改善点の特定
+### 分割後の構造
+```
+pkg/logger/
+├── logger.go              # Loggerインターフェース、グローバルインスタンス
+├── middleware_manager.go  # グローバルミドルウェア管理（新規）
+├── formatter_utils.go     # フォーマット関連ユーティリティ（新規）
+├── base_logger.go         # 共通ベースロガー
+├── direct_logger.go       # 直接ログ出力
+├── context_logger.go      # コンテキストベースログ
+├── config.go              # グローバル設定管理
+├── entry.go               # ログエントリ構造
+├── level.go               # ログレベル定義
+├── context.go             # コンテキストヘルパー
+├── middleware.go          # ミドルウェアインターフェース
+└── password_masking_middleware.go # パスワードマスキング
+```
 
-### 不一致・改善が必要な命名
-1. **構造体フィールドの略語使用**
-   - `mu sync.Mutex` - 他の箇所では完全な名前を使用
-   - 一貫性のため `mutex` に統一すべき
+### 効果
+- **責任の明確化**: 各ファイルが単一の責任を持つ
+- **保守性の向上**: 関連機能の変更が局所化される
+- **テスト容易性**: 機能別のテストが書きやすくなる
+- **可読性の向上**: ファイルサイズが適切になる
 
-2. **内部メソッドの命名**
-   - `isLevelEnabled` (private) vs `IsLevelEnabled` (public)
-   - 機能は同じだが、privateメソッドは不要
+### 実装優先度
+1. **高**: middleware_manager.go の分離（グローバル状態の整理）
+2. **中**: formatter_utils.go の分離（共通機能の整理）
+3. **低**: その他の微調整
 
-3. **変数名の一貫性**
-   - `middlewareMutex` vs `configMutex` vs `mu`
-   - mutexの命名規則を統一すべき
+## 3.3 命名の統一案の作成 - 完了
 
-4. **関数名の明確性**
-   - `processWithGlobalMiddleware` - 長いが明確
-   - `formatLogOutput` - 機能は明確だが配置場所が不適切
+### 現在の命名の問題点
 
-## 2.4 テストコードの整理が必要な箇所の特定
+#### 1. Mutex命名の不一致
+- **BaseLogger**: `mutex sync.Mutex` ✅ 統一済み
+- **グローバル変数**: `middlewareMutex`, `configMutex` - 接尾辞パターン
 
-### テストの重複・改善点
-1. **テストファイルのサイズ**
-   - `direct_logger_test.go`: 436行 - 大きめ
-   - `middleware_test.go`: 424行 - 大きめ
-   - `context_logger_test.go`: 382行 - 大きめ
+#### 2. 内部メソッドの命名
+- **現在**: `isLevelEnabled()` (private) - 適切
+- **公開関数**: `IsLevelEnabled()` (public) - 適切
+- 両方とも必要で、適切に使い分けられている
 
-2. **共通テストパターンの重複**
-   - `SetOutput(&buf)` の繰り返し使用
-   - 両ロガーで同じテストパターン（SetOutput, SetLevel）
-   - バッファ初期化とアサーションの重複
+#### 3. 変数名の一貫性
+- **グローバル変数**: `globalMiddlewareChain`, `middlewareMutex`, `middlewareOnce`
+- **設定関連**: `globalConfig`, `configMutex`, `initialized`
 
-3. **テストヘルパーの不足**
-   - 共通のセットアップ処理が各テストで重複
-   - アサーション処理の重複
+### 命名統一案
+
+#### 1. Mutex命名規則の統一
+**現在の状況**: 既に適切に統一されている
+- **構造体内**: `mutex` (短縮形、適切)
+- **グローバル変数**: `xxxMutex` (説明的、適切)
+
+**理由**:
+- 構造体内では文脈が明確なので短縮形が適切
+- グローバル変数では説明的な名前が必要
+
+#### 2. グローバル変数の命名パターン
+**現在**: 一貫したパターンを使用
+```go
+// ミドルウェア関連
+globalMiddlewareChain *MiddlewareChain
+middlewareMutex       sync.RWMutex
+middlewareOnce        sync.Once
+
+// 設定関連
+globalConfig Config
+configMutex  sync.RWMutex
+initialized  bool
+```
+
+**提案**: 現在の命名を維持（既に適切）
+
+#### 3. 関数名の明確性
+**現在の状況**: 適切に命名されている
+- `processWithGlobalMiddleware` - 長いが明確
+- `formatLogOutput` - 機能が明確
+- `createDefaultFormatter` - 目的が明確
+
+**提案**: 現在の命名を維持
+
+#### 4. 定数の命名
+**現在**: 適切に命名されている
+```go
+const (
+    debugLevelString    = "DEBUG"
+    infoLevelString     = "INFO"
+    // ...
+)
+```
+
+**提案**: 現在の命名を維持
+
+### 改善が必要な箇所
+
+#### 1. コメントの一貫性
+**問題**: 一部のコメントで日本語と英語が混在
+```go
+// nilの出力先の場合は何もしない
+if l.output == nil {
+    return
+}
+```
+
+**改善案**: 英語に統一
+```go
+// Do nothing if output is nil
+if l.output == nil {
+    return
+}
+```
+
+#### 2. エラーメッセージの一貫性
+**現在**: 英語で統一されている（適切）
+
+### 命名規則ガイドライン
+
+#### 1. 構造体フィールド
+- **Mutex**: `mutex` (短縮形)
+- **その他**: 完全な名前を使用
+
+#### 2. グローバル変数
+- **Mutex**: `xxxMutex` (説明的)
+- **設定**: `globalXxx` または `xxx` + 説明
+
+#### 3. 関数・メソッド
+- **Public**: PascalCase
+- **Private**: camelCase
+- **説明的な名前**: 機能が明確になるよう命名
+
+#### 4. 定数
+- **文字列定数**: `xxxString` サフィックス
+- **レベル定数**: `XxxLevel` サフィックス
+
+### 実装不要
+現在の命名は既に適切に統一されており、大きな変更は不要。
+唯一の改善点は日本語コメントの英語化のみ。
+
+## 3.4 構造改善案の作成 - 完了
+
+### 全体的な構造改善提案
+
+#### 1. アーキテクチャの改善
+**現在の問題**:
+- logger.goに複数の責任が集中
+- フォーマット処理が分散
+- グローバル状態の管理が複雑
+
+**改善案**:
+```
+pkg/logger/
+├── core/                   # コア機能（新規ディレクトリ）
+│   ├── interface.go       # Loggerインターフェース
+│   ├── base_logger.go     # 共通ベースロガー
+│   └── global.go          # グローバルインスタンス
+├── loggers/               # ロガー実装（新規ディレクトリ）
+│   ├── direct_logger.go   # 直接ログ出力
+│   └── context_logger.go  # コンテキストベースログ
+├── middleware/            # ミドルウェア関連（新規ディレクトリ）
+│   ├── manager.go         # グローバルミドルウェア管理
+│   ├── interface.go       # ミドルウェアインターフェース
+│   └── password_masking.go # パスワードマスキング
+├── utils/                 # ユーティリティ（新規ディレクトリ）
+│   ├── formatter.go       # フォーマット関連
+│   ├── entry.go           # ログエントリ構造
+│   └── level.go           # ログレベル定義
+├── config.go              # グローバル設定管理
+└── context.go             # コンテキストヘルパー
+```
+
+**メリット**:
+- 責任の明確な分離
+- 機能別のディレクトリ構成
+- 新機能の追加が容易
+
+**デメリット**:
+- パッケージ構造が複雑になる
+- インポートパスが長くなる
+- 既存コードへの影響が大きい
+
+#### 2. 現実的な改善案（推奨）
+**フラットな構造を維持しつつ責任を分離**:
+```
+pkg/logger/
+├── logger.go              # Loggerインターフェース、グローバルインスタンス
+├── middleware_manager.go  # グローバルミドルウェア管理（新規）
+├── formatter_utils.go     # フォーマット関連ユーティリティ（新規）
+├── base_logger.go         # 共通ベースロガー（既存）
+├── direct_logger.go       # 直接ログ出力
+├── context_logger.go      # コンテキストベースログ
+├── config.go              # グローバル設定管理
+├── entry.go               # ログエントリ構造
+├── level.go               # ログレベル定義
+├── context.go             # コンテキストヘルパー
+├── middleware.go          # ミドルウェアインターフェース
+└── password_masking_middleware.go # パスワードマスキング
+```
+
+#### 3. 依存関係の改善
+**現在の問題**:
+- 循環依存のリスク
+- グローバル状態への依存
+
+**改善案**:
+1. **設定の注入**: グローバル設定への直接アクセスを減らす
+2. **インターフェースの活用**: 具象型への依存を減らす
+3. **ファクトリーパターン**: ロガー作成の統一
+
+#### 4. エラーハンドリングの改善
+**現在の状況**: 基本的なエラーハンドリングは実装済み
+
+**改善案**:
+1. **エラー型の定義**: 独自エラー型の導入
+2. **エラーコールバック**: エラー発生時のコールバック機能
+3. **フォールバック機能**: 出力失敗時の代替手段
+
+#### 5. パフォーマンスの改善
+**現在の状況**: 基本的な最適化は実装済み
+
+**改善案**:
+1. **プールの活用**: LogEntryのオブジェクトプール
+2. **バッファリング**: 出力のバッファリング最適化
+3. **並行処理**: ミドルウェア処理の並行化（必要に応じて）
+
+### 実装優先度
+
+#### Phase 1: 高優先度の実装
+1. **BaseLoggerの導入** ✅ 完了
+2. **middleware_manager.goの分離** - 次のタスク
+3. **formatter_utils.goの分離**
+4. **日本語コメントの英語化**
+
+#### Phase 2: 中優先度（次のリリースで実装）
+1. **エラーハンドリングの改善**
+2. **設定注入の改善**
+3. **テストヘルパーの追加**
+
+#### Phase 3: 低優先度（将来的に検討）
+1. **ディレクトリ構造の再編成**
+2. **パフォーマンス最適化**
+3. **新機能の追加**
+
+### 破壊的変更の回避
+- 公開APIは変更しない
+- 既存の使用方法は維持
+- 内部実装のみ改善
+
+### 改善効果の測定
+1. **コード品質**: 循環複雑度、重複率
+2. **保守性**: ファイルサイズ、責任の分離度
+3. **テスト性**: テストカバレッジ、テスト実行時間
+4. **パフォーマンス**: ログ出力速度、メモリ使用量
+
+## 次のタスク（4.1 優先度の高い改善から実装）
+
+### Phase 1: 高優先度の実装
+1. **BaseLoggerの導入** ✅ 完了
+2. **middleware_manager.goの分離** - 次のタスク
+3. **formatter_utils.goの分離**
+4. **日本語コメントの英語化**
+
+### 実装方針
+- 破壊的変更を避ける
+- 既存のテストが通ることを確認
+- 段階的に実装して影響を最小化
