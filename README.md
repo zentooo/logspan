@@ -7,7 +7,7 @@ LogSpanは、Go言語向けの構造化ロギングライブラリです。HTTP�
 - **デュアルモードロギング**: コンテキストベースとダイレクトの2つのロギングモード
 - **構造化ログ出力**: JSON形式での一貫したログ出力
 - **ミドルウェア機構**: ログ処理パイプラインのカスタマイズが可能
-- **DataDog連携**: DataDog Standard Attributesに対応
+- **コンテキスト展開**: contextフィールドをトップレベルに展開するフォーマッター
 - **HTTPミドルウェア**: Webアプリケーションでの自動ログ設定
 - **並行処理安全**: goroutineセーフな実装
 - **シンプルなAPI**: 直感的で使いやすいインターフェース
@@ -276,13 +276,13 @@ contextLogger := logger.NewContextLogger()
 contextLogger.SetFormatter(formatter.NewJSONFormatter())
 ```
 
-#### DataDogフォーマッター
+#### ContextFlattenフォーマッター
 
 ```go
 import "github.com/zentooo/logspan/pkg/formatter"
 
 contextLogger := logger.NewContextLogger()
-contextLogger.SetFormatter(formatter.NewDataDogFormatter())
+contextLogger.SetFormatter(formatter.NewContextFlattenFormatter())
 ```
 
 ## 📋 ログ出力形式
@@ -315,17 +315,29 @@ contextLogger.SetFormatter(formatter.NewDataDogFormatter())
 }
 ```
 
-### DataDog Standard Attributes形式
+### Context Flatten形式
 
 ```json
 {
-  "timestamp": "2023-10-27T10:00:00Z",
-  "status": "info",
-  "message": "リクエスト処理を開始",
-  "logger": "logspan",
-  "duration": 150,
   "request_id": "req-12345",
-  "user_id": "user-67890"
+  "user_id": "user-67890",
+  "type": "request",
+  "runtime": {
+    "severity": "INFO",
+    "startTime": "2023-10-27T09:59:58.123456+09:00",
+    "endTime": "2023-10-27T10:00:00.223456+09:00",
+    "elapsed": 150,
+    "lines": [
+      {
+        "timestamp": "2023-10-27T09:59:59.123456+09:00",
+        "level": "INFO",
+        "message": "リクエスト処理を開始"
+      }
+    ]
+  },
+  "config": {
+    "elapsedUnit": "ms"
+  }
 }
 ```
 
@@ -437,13 +449,13 @@ pkg/
 ├── formatter/                       # フォーマッター
 │   ├── interface.go                # フォーマッターインターフェース
 │   ├── json_formatter.go           # JSONフォーマッター
-│   └── datadog_formatter.go        # DataDogフォーマッター
+│   └── context_flatten_formatter.go # ContextFlattenフォーマッター
 ├── http_middleware/                 # HTTPミドルウェア
 │   └── middleware.go               # HTTPリクエストロギング
 └── examples/                        # 使用例
     ├── context_logger/             # コンテキストロガー例
     ├── direct_logger/              # ダイレクトロガー例
-    ├── datadog_formatter/          # DataDogフォーマッター例
+    ├── context_flatten_formatter/  # ContextFlattenフォーマッター例
     └── http_middleware_example.go  # HTTPミドルウェア例
 ```
 

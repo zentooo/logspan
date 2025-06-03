@@ -26,7 +26,7 @@ The main package is located in the `pkg/logger/` directory and contains the foll
 The `pkg/formatter/` directory contains different output format implementations:
 - [interface.go](mdc:pkg/formatter/interface.go) - Formatter interface
 - [json_formatter.go](mdc:pkg/formatter/json_formatter.go) - Standard JSON formatter with optional indentation
-- [datadog_formatter.go](mdc:pkg/formatter/datadog_formatter.go) - DataDog Standard Attributes formatter
+- [context_flatten_formatter.go](mdc:pkg/formatter/context_flatten_formatter.go) - Context flatten formatter that moves context fields to top level
 
 ### HTTP Middleware
 Optional HTTP server middleware implementations are in the `pkg/http_middleware/` directory:
@@ -36,7 +36,7 @@ Optional HTTP server middleware implementations are in the `pkg/http_middleware/
 The `examples/` directory contains usage examples:
 - [context_logger/](mdc:examples/context_logger/) - Context logger usage examples
 - [direct_logger/](mdc:examples/direct_logger/) - Direct logger usage examples
-- [datadog_formatter/](mdc:examples/datadog_formatter/) - DataDog formatter examples
+- [context_flatten_formatter/](mdc:examples/context_flatten_formatter/) - Context flatten formatter examples
 - [http_middleware_example.go](mdc:examples/http_middleware_example.go) - HTTP middleware usage
 
 ### Test Files
@@ -46,7 +46,7 @@ Comprehensive test coverage with the following test files:
 - [middleware_test.go](mdc:pkg/logger/middleware_test.go) - Middleware framework tests
 - [password_masking_middleware_test.go](mdc:pkg/logger/password_masking_middleware_test.go) - Password masking tests
 - [json_formatter_test.go](mdc:pkg/formatter/json_formatter_test.go) - JSON formatter tests
-- [datadog_formatter_test.go](mdc:pkg/formatter/datadog_formatter_test.go) - DataDog formatter tests
+- [context_flatten_formatter_test.go](mdc:pkg/formatter/context_flatten_formatter_test.go) - Context flatten formatter tests
 - [middleware_test.go](mdc:pkg/http_middleware/middleware_test.go) - HTTP middleware tests
 
 ## Key Features
@@ -55,7 +55,7 @@ Comprehensive test coverage with the following test files:
 - **Simple API interface**: Intuitive and easy-to-use logging methods
 - **Extensibility through middleware**: Pluggable middleware system for log processing
 - **Password masking**: Built-in sensitive information protection
-- **DataDog Standard Attributes support**: Native DataDog integration
+- **Context flattening**: Flatten context fields to top level for easier access
 - **Pretty-printing**: Optional JSON indentation for development
 - **HTTP integration**: Automatic request logging and context setup
 - **Thread-safe**: Goroutine-safe implementation
@@ -79,7 +79,7 @@ pkg/
 ├── formatter/                       # Output formatters
 │   ├── interface.go                # Formatter interface
 │   ├── json_formatter.go           # JSON output
-│   └── datadog_formatter.go        # DataDog format
+│   └── context_flatten_formatter.go # Context flatten format
 └── http_middleware/                 # HTTP integration
     └── middleware.go               # HTTP middleware
 ```

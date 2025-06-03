@@ -130,22 +130,22 @@ logger.AddMiddleware(passwordMasker.Middleware())
 ```go
 // For DirectLogger
 directLogger := logger.NewDirectLogger()
-directLogger.SetFormatter(formatter.NewDataDogFormatter())
+directLogger.SetFormatter(formatter.NewContextFlattenFormatter())
 
 // For ContextLogger
 contextLogger := logger.NewContextLogger()
-contextLogger.SetFormatter(formatter.NewDataDogFormatterWithIndent("  "))
+contextLogger.SetFormatter(formatter.NewContextFlattenFormatterWithIndent("  "))
 ```
 
 ### Available Formatters
 ```go
 // JSON Formatters
-formatter.NewJSONFormatter()                    // Compact JSON
-formatter.NewJSONFormatterWithIndent("  ")     // Pretty-printed JSON
+formatter.NewJSONFormatter()                           // Compact JSON
+formatter.NewJSONFormatterWithIndent("  ")            // Pretty-printed JSON
 
-// DataDog Formatters
-formatter.NewDataDogFormatter()                 // Compact DataDog format
-formatter.NewDataDogFormatterWithIndent("  ")  // Pretty-printed DataDog format
+// Context Flatten Formatters
+formatter.NewContextFlattenFormatter()                 // Compact context-flattened format
+formatter.NewContextFlattenFormatterWithIndent("  ")  // Pretty-printed context-flattened format
 ```
 
 ## HTTP Middleware

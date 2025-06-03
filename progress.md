@@ -1,74 +1,108 @@
-# LogSpan ドキュメント更新タスク
+# Context Flatten Formatter 作成タスク
 
 ## タスク概要
-現状のコードの実態に合わせて、.mdcとREADMEを更新する
+DataDogフォーマッターを置き換えて、`context`以下のキーをJSONのトップレベルに展開するだけのシンプルなフォーマッターを作成する。
 
-## プランニング
+## 要件分析
+- 現在のLogOutput構造体: `{type, context, runtime, config}`
+- 新フォーマッターの出力: `context`内のキーをトップレベルに展開し、他のフィールドもトップレベルに配置
+- 例: `{"context": {"user_id": "123", "request_id": "req-456"}}` → `{"user_id": "123", "request_id": "req-456", "type": "request", "runtime": {...}, "config": {...}}`
 
-### 現状分析
-- 実際のコード構成を調査済み
-- 主要な差異を特定：
-  1. パスワードマスキングミドルウェアが追加されている
-  2. PrettifyJSON設定が追加されている
-  3. LogLevel型とその関連機能が独立したファイルに分離されている
-  4. フィールド管理の実装が異なる
-  5. APIの一部が変更されている
+## サブタスク
 
-### サブタスク
+### 1. 新しいフォーマッターの設計
+- [x] 1-1. フォーマッター名の決定（ContextFlattenFormatter）
+- [x] 1-2. 出力構造の詳細設計
+- [x] 1-3. キー衝突時の処理方針決定
 
-#### 1. 実際のコード構成の詳細調査
-- [x] 1-1. 全ての主要ファイルの内容を確認
-- [x] 1-2. 実際のAPI構造を把握
-- [x] 1-3. 新機能（パスワードマスキング等）の詳細を確認
-- [x] 1-4. 設定オプションの変更点を確認
+#### 設計詳細
+- **フォーマッター名**: `ContextFlattenFormatter`
+- **出力構造**: `context`内のキー・値ペアをトップレベルに展開し、`type`, `runtime`, `config`もトップレベルに配置
+- **キー衝突処理**: contextの値を優先（contextのキーが`type`, `runtime`, `config`と衝突した場合）
+- **インデント対応**: JSONFormatterと同様にインデント機能を提供
 
-#### 2. .mdc（ワークスペースルール）の更新
-- [x] 2-1. API Usage Guideの更新
-- [x] 2-2. Log Format Guideの更新
-- [x] 2-3. Project Structure Guideの更新
+### 2. フォーマッター実装
+- [x] 2-1. `pkg/formatter/context_flatten_formatter.go`ファイル作成
+- [x] 2-2. ContextFlattenFormatter構造体実装
+- [x] 2-3. コンストラクタ関数実装（インデント対応）
+- [x] 2-4. Format()メソッド実装
+- [x] 2-5. context展開ロジック実装
 
-#### 3. README.mdの更新
-- [x] 3-1. 新機能（パスワードマスキング）の追加
-- [x] 3-2. 設定オプション（PrettifyJSON）の追加
-- [x] 3-3. APIの変更点を反映
-- [x] 3-4. サンプルコードの更新
-- [x] 3-5. パッケージ構成図の更新
+### 3. テスト実装
+- [x] 3-1. `pkg/formatter/context_flatten_formatter_test.go`ファイル作成
+- [x] 3-2. 基本的なフォーマット機能のテスト
+- [x] 3-3. インデント機能のテスト
+- [x] 3-4. キー衝突時の動作テスト
+- [x] 3-5. 空のcontextの処理テスト
 
-#### 4. 検証とテスト
-- [x] 4-1. 更新されたドキュメントの内容確認
-- [x] 4-2. サンプルコードの動作確認
-- [x] 4-3. 最終チェック
+### 4. 統合とドキュメント更新
+- [x] 4-1. 既存のDataDogフォーマッター使用箇所の特定
+- [x] 4-2. 使用例の作成
+- [x] 4-3. README.mdの更新（DataDog関連記述の削除、ContextFlatten関連の追加）
+- [x] 4-4. examples/README.mdの更新
 
-## 実行方針
-- 一つずつサブタスクを実行
-- 実際のコードとの整合性を重視
-- 新機能の説明を充実させる
-- 既存の良い部分は保持する
+### 5. 動作確認
+- [x] 5-1. 全テストの実行確認
+- [x] 5-2. 削除による影響がないことの確認
 
-## 完了報告
+## 進め方
+1. まずファイル削除を行う
+2. 次にドキュメントを順次更新する
+3. 最後に全体の動作確認を行う
 
-### 更新内容
-1. **ワークスペースルール（.mdc）の更新**:
-   - API Usage Guide: 実際のAPIに合わせて全面更新
-   - Log Format Guide: 実際の出力形式とパスワードマスキング機能を反映
-   - Project Structure Guide: 実際のファイル構成と新機能を反映
+## 進捗
+- [x] プランニング完了
+- [x] ファイル削除完了
+- [x] ドキュメント更新完了
+- [x] 動作確認完了
 
-2. **README.mdの更新**:
-   - パスワードマスキングミドルウェアの詳細説明を追加
-   - PrettifyJSON設定オプションの説明を追加
-   - APIの変更点（AddField → AddContextValue）を反映
-   - サンプルコードを実際のAPIに合わせて修正
-   - パッケージ構成図を実際の構成に更新
+## 完了サマリー
 
-3. **検証結果**:
-   - コンテキストロガーのサンプル: 正常動作確認
-   - 全テスト: 正常通過確認
-   - ドキュメントの整合性: 実際のコードと一致
+### 削除されたファイル
+- `pkg/formatter/datadog_formatter.go`
+- `pkg/formatter/datadog_formatter_test.go`
+- `examples/datadog_formatter/main.go`
+- `examples/datadog_formatter/README.md`
+- `examples/datadog_formatter/` ディレクトリ
 
-### 主要な改善点
-- 実際のコード実装との完全な整合性を実現
-- 新機能（パスワードマスキング、PrettifyJSON）の詳細説明
-- より正確で使いやすいAPI説明
-- 実際のファイル構成を反映したプロジェクト構造図
+### 更新されたドキュメント
+- `.cursor/rules/api-usage.mdc`: DataDog関連記述を削除し、ContextFlattenFormatter記述に置き換え
+- `.cursor/rules/log-format.mdc`: DataDog形式を削除し、ContextFlatten形式を追加
+- `.cursor/rules/project-structure.mdc`: DataDog関連ファイル記述を削除し、ContextFlatten関連に置き換え
+- `README.md`: DataDog関連記述を削除し、ContextFlattenFormatter記述に置き換え
+- `examples/README.md`: DataDog関連記述を削除し、ContextFlattenFormatter記述に置き換え
 
-タスク完了: ✅
+### 動作確認結果
+- 全テスト成功: `go test ./...` - PASS
+- 全パッケージビルド成功: `go build ./...` - 成功
+- 削除による影響なし
+
+---
+
+# DataDogフォーマッター削除タスク
+
+## タスク概要
+ContextFlattenFormatterの実装が完了したため、不要になったDataDogフォーマッターを削除し、関連するドキュメントを更新する。
+
+## サブタスク
+
+### 1. DataDogフォーマッター関連ファイルの削除
+- [x] 1-1. `pkg/formatter/datadog_formatter.go`の削除
+- [x] 1-2. `pkg/formatter/datadog_formatter_test.go`の削除
+- [x] 1-3. `examples/datadog_formatter/`ディレクトリの削除
+
+### 2. ドキュメント更新
+- [x] 2-1. API Usage Guideの更新（DataDog関連記述の削除）
+- [x] 2-2. Log Format Guideの更新（DataDog形式の削除、ContextFlatten形式の追加）
+- [x] 2-3. Project Structure Guideの更新（DataDog関連ファイルの削除、ContextFlatten関連の追加）
+- [x] 2-4. README.mdの更新（DataDog関連記述の削除、ContextFlatten関連の追加）
+- [x] 2-5. examples/README.mdの更新
+
+### 3. 動作確認
+- [x] 3-1. 全テストの実行確認
+- [x] 3-2. 削除による影響がないことの確認
+
+## 進め方
+1. まずファイル削除を行う
+2. 次にドキュメントを順次更新する
+3. 最後に全体の動作確認を行う

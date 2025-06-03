@@ -9,21 +9,21 @@
 go run examples/direct_logger/main.go
 ```
 
-Direct Loggerは即座にログを出力する機能を提供します。ログレベルによるフィルタリングや基本的なフォーマット機能をテストできます。DataDog formatterの使用例も含まれています。
+Direct Loggerは即座にログを出力する機能を提供します。ログレベルによるフィルタリングや基本的なフォーマット機能をテストできます。
 
 ### Context Logger Example
 ```bash
 go run examples/context_logger/main.go
 ```
 
-Context Loggerはリクエスト単位でログを集約し、JSON形式で出力する機能を提供します。コンテキストベースのログ管理をテストできます。DataDog formatterの使用例も含まれています。
+Context Loggerはリクエスト単位でログを集約し、JSON形式で出力する機能を提供します。コンテキストベースのログ管理をテストできます。
 
-### DataDog Formatter Example
+### Context Flatten Formatter Example
 ```bash
-go run examples/datadog_formatter/main.go
+go run examples/context_flatten_formatter/main.go
 ```
 
-DataDog Standard Attributes形式でのログ出力に特化した例です。DataDogでの監視・分析に最適化されたログフォーマットの使用方法を学べます。
+Context Flatten Formatterは、contextフィールドをJSONのトップレベルに展開する形式でのログ出力に特化した例です。ログの可読性とアクセス性を向上させるフォーマットの使用方法を学べます。
 
 ## ディレクトリ構造
 
@@ -31,12 +31,12 @@ DataDog Standard Attributes形式でのログ出力に特化した例です。Da
 examples/
 ├── README.md
 ├── direct_logger/
-│   └── main.go          # Direct Logger の使用例（DataDog formatter含む）
+│   └── main.go          # Direct Logger の使用例
 ├── context_logger/
-│   └── main.go          # Context Logger の使用例（DataDog formatter含む）
-└── datadog_formatter/
-    ├── main.go          # DataDog Formatter 専用の使用例
-    └── README.md        # DataDog Formatter の詳細説明
+│   └── main.go          # Context Logger の使用例
+└── context_flatten_formatter/
+    ├── main.go          # Context Flatten Formatter 専用の使用例
+    └── README.md        # Context Flatten Formatter の詳細説明
 ```
 
 ## フォーマッター
@@ -44,7 +44,7 @@ examples/
 logspanライブラリは複数のログフォーマッターをサポートしています：
 
 - **JSON Formatter（デフォルト）**: logone-go準拠の標準JSON形式
-- **DataDog Formatter**: DataDog Standard Attributes形式
+- **Context Flatten Formatter**: contextフィールドをトップレベルに展開する形式
 
 各exampleでは、これらのフォーマッターの使い分けを学ぶことができます。
 

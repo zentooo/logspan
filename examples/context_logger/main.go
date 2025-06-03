@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/zentooo/logspan/pkg/formatter"
 	"github.com/zentooo/logspan/pkg/logger"
 )
 
@@ -39,32 +38,6 @@ func main() {
 	logger.D.Infof("Direct logger message 1")
 	logger.D.Warnf("Direct logger message 2")
 	logger.D.Errorf("Direct logger message 3")
-
-	fmt.Println("\n=== DataDog Formatter Example ===")
-
-	// Create a context with a logger using DataDog formatter
-	ctx2 := context.Background()
-	contextLogger2 := logger.NewContextLogger()
-
-	// Set DataDog formatter for this logger
-	contextLogger2.SetFormatter(formatter.NewDataDogFormatterWithIndent("  "))
-
-	ctx2 = logger.WithLogger(ctx2, contextLogger2)
-
-	// Add context fields that will appear as custom attributes in DataDog
-	logger.AddContextValue(ctx2, "request_id", "req-datadog-123")
-	logger.AddContextValue(ctx2, "service", "example-service")
-	logger.AddContextValue(ctx2, "environment", "development")
-
-	// Log some messages
-	logger.Infof(ctx2, "DataDog formatter example started")
-	logger.AddContextValue(ctx2, "operation", "demo")
-	logger.Debugf(ctx2, "This is a debug message in DataDog format")
-	logger.Warnf(ctx2, "This is a warning message in DataDog format")
-	logger.Infof(ctx2, "DataDog formatter example completed")
-
-	// Flush the logger to output in DataDog Standard Attributes format
-	logger.FlushContext(ctx2)
 }
 
 func processRequest(ctx context.Context) {

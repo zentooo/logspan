@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/zentooo/logspan/pkg/formatter"
 	"github.com/zentooo/logspan/pkg/logger"
 )
 
@@ -51,24 +50,4 @@ func main() {
 	dl.Criticalf("This critical message should appear")
 
 	fmt.Print(buf.String())
-
-	fmt.Println("\n=== DataDog Formatter Example ===")
-
-	// Create a new direct logger with DataDog formatter
-	ddLogger := logger.NewDirectLogger()
-	ddLogger.SetFormatter(formatter.NewDataDogFormatterWithIndent("  "))
-
-	// Use a buffer to capture DataDog formatted output
-	var ddBuf bytes.Buffer
-	ddLogger.SetOutput(&ddBuf)
-
-	fmt.Println("Testing DataDog formatter with different log levels:")
-	ddLogger.SetLevelFromString("DEBUG")
-	ddLogger.Debugf("Debug message in DataDog format")
-	ddLogger.Infof("Info message in DataDog format")
-	ddLogger.Warnf("Warning message in DataDog format")
-	ddLogger.Errorf("Error message in DataDog format")
-	ddLogger.Criticalf("Critical message in DataDog format")
-
-	fmt.Print(ddBuf.String())
 }
