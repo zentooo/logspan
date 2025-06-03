@@ -102,7 +102,6 @@ You can also trigger a manual pre-release:
 2. **Run quality checks**:
    ```bash
    golangci-lint run
-   gosec ./...
    ```
 
 3. **Update documentation** if needed

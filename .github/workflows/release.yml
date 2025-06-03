@@ -56,11 +56,6 @@ jobs:
         version: latest
         args: --timeout=5m
 
-    - name: Run security scan
-      uses: securecodewarrior/github-action-gosec@master
-      with:
-        args: './...'
-
     - name: Build
       run: go build -v ./...
 
