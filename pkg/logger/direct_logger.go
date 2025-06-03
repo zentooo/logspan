@@ -35,11 +35,12 @@ func (l *DirectLogger) logf(level LogLevel, format string, args ...interface{}) 
 	}
 
 	now := time.Now()
-	entry := &LogEntry{
-		Timestamp: now,
-		Level:     level.String(),
-		Message:   fmt.Sprintf(format, args...),
-	}
+
+	// Get LogEntry from pool instead of creating new one
+	entry := getLogEntry()
+	entry.Timestamp = now
+	entry.Level = level.String()
+	entry.Message = fmt.Sprintf(format, args...)
 
 	// Add source information if enabled
 	config := GetConfig()
@@ -53,15 +54,21 @@ func (l *DirectLogger) logf(level LogLevel, format string, args ...interface{}) 
 
 	// Process through global middleware chain
 	processWithGlobalMiddleware(entry, func(processedEntry *LogEntry) {
-		// Use the formatter (default or explicitly set)
-		jsonData, err := formatLogOutput([]*LogEntry{processedEntry}, make(map[string]interface{}), processedEntry.Timestamp, processedEntry.Timestamp, l.formatter)
+		// Create a temporary slice for single entry processing
+		entries := []*LogEntry{processedEntry}
+
+		// Format and output the log entry
+		jsonData, err := formatLogOutput(entries, nil, now, now, l.formatter)
 		if err != nil {
 			// Handle formatting error using error handler
 			handleError("format", err)
+			// Fallback to simple output if formatting fails
 			_, writeErr := fmt.Fprintf(l.output, "Error formatting log: %v\n", err)
 			if writeErr != nil {
 				handleError("write_fallback", writeErr)
 			}
+			// Return entry to pool even on error
+			putLogEntry(processedEntry)
 			return
 		}
 
@@ -74,6 +81,9 @@ func (l *DirectLogger) logf(level LogLevel, format string, args ...interface{}) 
 				handleError("write_error_fallback", fallbackErr)
 			}
 		}
+
+		// Return entry to pool after processing
+		putLogEntry(processedEntry)
 	})
 }
 

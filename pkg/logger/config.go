@@ -26,6 +26,9 @@ type Config struct {
 	// 0 means no limit (manual flush only)
 	MaxLogEntries int
 
+	// LogType is the type field value in log output
+	LogType string
+
 	// ErrorHandler is the error handler for logger errors
 	// If nil, the global error handler will be used
 	ErrorHandler ErrorHandler
@@ -38,8 +41,9 @@ func DefaultConfig() Config {
 		Output:           os.Stdout,
 		EnableSourceInfo: false,
 		PrettifyJSON:     false,
-		MaxLogEntries:    0,   // No auto-flush by default
-		ErrorHandler:     nil, // Use global error handler
+		MaxLogEntries:    0,         // No auto-flush by default
+		LogType:          "request", // Default log type
+		ErrorHandler:     nil,       // Use global error handler
 	}
 }
 

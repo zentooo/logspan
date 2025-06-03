@@ -28,7 +28,7 @@ func NewContextLogger() *ContextLogger {
 
 	return &ContextLogger{
 		BaseLogger: &base,
-		entries:    make([]*LogEntry, 0),
+		entries:    getLogEntrySlice(), // Use pool for slice allocation
 		fields:     make(map[string]interface{}),
 		startTime:  time.Now(),
 		maxEntries: config.MaxLogEntries,
@@ -44,11 +44,11 @@ func (l *ContextLogger) addEntry(level LogLevel, message string) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
-	entry := &LogEntry{
-		Timestamp: time.Now(),
-		Level:     level.String(),
-		Message:   message,
-	}
+	// Get LogEntry from pool instead of creating new one
+	entry := getLogEntry()
+	entry.Timestamp = time.Now()
+	entry.Level = level.String()
+	entry.Message = message
 
 	// Add source information if enabled
 	config := GetConfig()
@@ -121,6 +121,11 @@ func (l *ContextLogger) flushInternal() {
 		if fallbackErr != nil {
 			handleError("write_error_fallback", fallbackErr)
 		}
+	}
+
+	// Return LogEntry objects to pool before clearing slice
+	for _, entry := range l.entries {
+		putLogEntry(entry)
 	}
 
 	// Clear entries after flushing and reset start time

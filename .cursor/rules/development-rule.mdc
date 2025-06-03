@@ -1,0 +1,13 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# lint
+
+`golangci-lint run`
+
+
+# ルール
+
+* コードを書いたあとは必ずtestとlintを通すこと

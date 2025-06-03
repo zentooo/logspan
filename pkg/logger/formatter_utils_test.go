@@ -3,6 +3,7 @@ package logger
 import (
 	"bytes"
 	"encoding/json"
+	"os"
 	"testing"
 	"time"
 
@@ -260,5 +261,72 @@ func TestFormatterUtils_FormatLogOutput_EmptyEntries(t *testing.T) {
 	// With empty entries, severity should be DEBUG (default)
 	if runtime["severity"] != "DEBUG" {
 		t.Errorf("Expected severity to be 'DEBUG', got %v", runtime["severity"])
+	}
+}
+
+func TestFormatterUtils_FormatLogOutput_LogType(t *testing.T) {
+	// Save original state
+	originalConfig := GetConfig()
+	originalInitialized := IsInitialized()
+
+	testCases := []struct {
+		name         string
+		logType      string
+		expectedType string
+	}{
+		{
+			name:         "Custom log type",
+			logType:      "custom_log_type",
+			expectedType: "custom_log_type",
+		},
+		{
+			name:         "Empty log type defaults to request",
+			logType:      "",
+			expectedType: "request",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			customConfig := Config{
+				MinLevel:         InfoLevel,
+				Output:           os.Stdout,
+				EnableSourceInfo: false,
+				PrettifyJSON:     false,
+				MaxLogEntries:    0,
+				LogType:          tc.logType,
+				ErrorHandler:     nil,
+			}
+
+			Init(customConfig)
+
+			entries := []*LogEntry{
+				{
+					Timestamp: time.Now(),
+					Level:     "INFO",
+					Message:   "test message",
+				},
+			}
+
+			output, err := formatLogOutput(entries, map[string]interface{}{}, time.Now(), time.Now(), nil)
+			if err != nil {
+				t.Errorf("Expected no error, got %v", err)
+			}
+
+			var logOutput map[string]interface{}
+			if err := json.Unmarshal(output, &logOutput); err != nil {
+				t.Errorf("Failed to parse JSON output: %v", err)
+			}
+
+			// Verify that expected log type is used
+			if logOutput["type"] != tc.expectedType {
+				t.Errorf("Expected type to be '%s', got %v", tc.expectedType, logOutput["type"])
+			}
+		})
+	}
+
+	// Restore original state
+	if originalInitialized {
+		Init(originalConfig)
 	}
 }

@@ -47,7 +47,7 @@ func (h *DefaultErrorHandler) HandleError(operation string, err error) {
 	defer h.mutex.Unlock()
 
 	if h.output != nil {
-		fmt.Fprintf(h.output, "[LOGGER ERROR] %s: %v\n", operation, err)
+		_, _ = fmt.Fprintf(h.output, "[LOGGER ERROR] %s: %v\n", operation, err)
 	}
 }
 
