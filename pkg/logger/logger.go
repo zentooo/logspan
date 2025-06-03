@@ -29,15 +29,20 @@ type Logger interface {
 var (
 	globalMiddlewareChain *MiddlewareChain
 	middlewareMutex       sync.RWMutex
+	middlewareOnce        sync.Once
 )
 
-func init() {
-	globalMiddlewareChain = NewMiddlewareChain()
+// ensureMiddlewareChain ensures the global middleware chain is initialized
+func ensureMiddlewareChain() {
+	middlewareOnce.Do(func() {
+		globalMiddlewareChain = NewMiddlewareChain()
+	})
 }
 
 // AddMiddleware adds a middleware to the global middleware chain
 // This middleware will be applied to all log entries processed by the logger
 func AddMiddleware(middleware Middleware) {
+	ensureMiddlewareChain()
 	middlewareMutex.Lock()
 	defer middlewareMutex.Unlock()
 	globalMiddlewareChain.Add(middleware)
@@ -45,6 +50,7 @@ func AddMiddleware(middleware Middleware) {
 
 // ClearMiddleware removes all middleware from the global chain
 func ClearMiddleware() {
+	ensureMiddlewareChain()
 	middlewareMutex.Lock()
 	defer middlewareMutex.Unlock()
 	globalMiddlewareChain.Clear()
@@ -52,6 +58,7 @@ func ClearMiddleware() {
 
 // GetMiddlewareCount returns the number of middleware in the global chain
 func GetMiddlewareCount() int {
+	ensureMiddlewareChain()
 	middlewareMutex.RLock()
 	defer middlewareMutex.RUnlock()
 	return globalMiddlewareChain.Count()
@@ -59,6 +66,7 @@ func GetMiddlewareCount() int {
 
 // processWithGlobalMiddleware processes a log entry through the global middleware chain
 func processWithGlobalMiddleware(entry *LogEntry, final func(*LogEntry)) {
+	ensureMiddlewareChain()
 	middlewareMutex.RLock()
 	defer middlewareMutex.RUnlock()
 	globalMiddlewareChain.Process(entry, final)
