@@ -1,9 +1,24 @@
 // Package logspan provides a flexible and extensible logging library for Go applications.
 //
-// Logspan offers a comprehensive logging solution with dual-mode logging capabilities,
-// middleware support, and seamless HTTP integration. It's designed to provide both
-// immediate logging for simple use cases and context-based logging for complex
-// request processing scenarios.
+// LogSpan is a **zero-dependency** structured logging library for Go that provides
+// **context-based log aggregation** by **consolidating multiple log entries into a
+// single JSON structure**. This enables unified log management per HTTP request or
+// batch processing unit. Unlike traditional scattered logging, LogSpan outputs all
+// related logs in a single JSON structure, improving log analysis and troubleshooting
+// efficiency.
+//
+// # Key Features
+//
+//   - 🔗 Context-based Log Aggregation: Consolidates multiple log entries into a single JSON for unified log management
+//   - 🚀 Zero Dependencies: Operates solely with Go standard library, no external dependencies required
+//   - 💾 Memory Efficient: Automatic memory pooling and configurable auto-flush to minimize memory footprint
+//   - Dual-mode logging: Context-based and direct logging modes
+//   - Structured log output: Consistent JSON-formatted log output
+//   - Middleware mechanism: Customizable log processing pipeline
+//   - Context flattening: Formatter that expands context fields to top level
+//   - HTTP middleware: Automatic log setup for web applications
+//   - Concurrency-safe: Goroutine-safe implementation
+//   - Simple API: Intuitive and easy-to-use interface
 //
 // # Overview
 //
@@ -19,12 +34,17 @@
 //
 //	import (
 //	    "context"
+//	    "os"
 //	    "github.com/zentooo/logspan/logger"
 //	)
 //
 //	func main() {
 //	    // Initialize logger
-//	    logger.Init(logger.DefaultConfig())
+//	    logger.Init(logger.Config{
+//	        MinLevel:     logger.InfoLevel,
+//	        Output:       os.Stdout,
+//	        PrettifyJSON: true,
+//	    })
 //
 //	    // Direct logging
 //	    logger.D.Infof("Application started")
@@ -34,22 +54,61 @@
 //	    contextLogger := logger.NewContextLogger()
 //	    ctx = logger.WithLogger(ctx, contextLogger)
 //
-//	    logger.AddContextValue(ctx, "request_id", "req-123")
-//	    logger.Infof(ctx, "Processing request")
+//	    // Add context information
+//	    logger.AddContextValue(ctx, "request_id", "req-12345")
+//	    logger.AddContextValue(ctx, "user_id", "user-67890")
+//
+//	    // Record logs
+//	    logger.Infof(ctx, "Request processing started")
+//	    logger.Infof(ctx, "Request processing completed")
+//
+//	    // Output aggregated logs
 //	    logger.FlushContext(ctx)
 //	}
 //
-// # Key Features
+// # Concept
 //
-//   - Dual-mode logging: Context-based aggregation and direct immediate output
-//   - Transparent context management through HTTP middleware
-//   - Extensible middleware system for log processing
-//   - Built-in password masking for sensitive information
-//   - Multiple output formatters (JSON, Context Flatten)
-//   - Configurable log levels and output destinations
-//   - Thread-safe operations
-//   - Memory-efficient with auto-flush capabilities
-//   - Comprehensive HTTP integration
+// ## Traditional Logging Challenges
+// Traditional logging libraries output multiple log entries individually for a single
+// request or process, causing related logs to scatter throughout log files. This makes
+// it difficult to trace related logs and leads to inefficient debugging and troubleshooting.
+//
+// ## LogSpan's Approach
+// LogSpan solves this problem with **context-based log aggregation**:
+//
+// ### Unified JSON Structure
+//	{
+//	  "type": "request",
+//	  "context": {
+//	    "request_id": "req-12345",
+//	    "user_id": "user-67890"
+//	  },
+//	  "runtime": {
+//	    "severity": "INFO",
+//	    "startTime": "2023-10-27T09:59:58.123456+09:00",
+//	    "endTime": "2023-10-27T10:00:00.223456+09:00",
+//	    "elapsed": 150,
+//	    "lines": [
+//	      {"timestamp": "...", "level": "INFO", "message": "Request processing started"},
+//	      {"timestamp": "...", "level": "DEBUG", "message": "Validating parameters"},
+//	      {"timestamp": "...", "level": "INFO", "message": "Processing completed"}
+//	    ]
+//	  }
+//	}
+//
+// ### Zero-Dependency Lightweight Design
+//   - No External Dependencies: Uses only Go standard library
+//   - Lightweight: Minimal memory footprint with automatic memory pooling
+//   - Memory Efficient: Object pooling for LogEntry and slice reuse to reduce GC pressure
+//   - Auto-Flush: Configurable automatic flushing to control memory usage
+//   - Fast: Efficient log processing with optimized memory management
+//   - Secure: No vulnerability risks from external dependencies
+//
+// ### Benefits
+//   - Efficient Log Analysis: All related logs consolidated into a single JSON
+//   - Improved Troubleshooting: Context information and processing time visible at a glance
+//   - Simplified Operations: No dependency management required
+//   - Better Performance: Lightweight and fast processing
 //
 // # Architecture
 //
@@ -108,6 +167,61 @@
 // - **Concurrency Testing**: Robust goroutine safety verification
 // - **Edge Case Handling**: Thorough testing of error conditions and edge cases
 //
+// # Configuration
+//
+// The library provides flexible configuration options:
+//
+//	config := logger.Config{
+//	    MinLevel:         logger.InfoLevel,    // Filter log levels
+//	    Output:           os.Stdout,           // Output destination
+//	    EnableSourceInfo: true,                // Include source file info
+//	    PrettifyJSON:     true,                // Pretty-print JSON
+//	    MaxLogEntries:    1000,                // Auto-flush threshold
+//	    LogType:          "request",           // Custom log type
+//	    ErrorHandler:     logger.NewDefaultErrorHandler(), // Error handler
+//	}
+//	logger.Init(config)
+//
+// # Memory Optimization
+//
+// LogSpan provides comprehensive memory optimization features:
+//
+// ## Auto-Flush Feature
+//
+// Configure auto-flush to control memory usage:
+//
+//	// Configure auto-flush
+//	logger.Init(logger.Config{
+//	    MaxLogEntries: 100, // Auto-flush every 100 entries
+//	})
+//
+//	ctx := context.Background()
+//	contextLogger := logger.NewContextLogger()
+//	ctx = logger.WithLogger(ctx, contextLogger)
+//
+//	logger.AddContextValue(ctx, "request_id", "req-123")
+//
+//	// Auto-flush occurs when 100 entries are reached
+//	for i := 0; i < 250; i++ {
+//	    logger.Infof(ctx, "Processing item %d", i)
+//	}
+//	// Result: 2 auto-flushes (at 100 and 200 entries)
+//	// Remaining 50 entries need manual flush
+//
+//	logger.FlushContext(ctx) // Output remaining entries
+//
+// ## Memory Pool Management
+//
+// LogSpan automatically manages memory pools for optimal performance:
+//
+//	// Pool statistics (for monitoring)
+//	stats := logger.GetPoolStats()
+//	fmt.Printf("LogEntry Pool Size: %d\n", stats.LogEntryPoolSize)
+//	fmt.Printf("Slice Pool Size: %d\n", stats.SlicePoolSize)
+//
+//	// Note: Pool management is automatic and internal
+//	// LogEntry and []*LogEntry slices are automatically pooled for memory efficiency
+//
 // # Use Cases
 //
 // ## Web Applications
@@ -126,6 +240,7 @@
 //	logger.Init(logger.Config{
 //	    MinLevel:     logger.InfoLevel,
 //	    PrettifyJSON: false, // Compact for production
+//	    MaxLogEntries: 1000, // Auto-flush for memory efficiency
 //	})
 //
 // ## CLI Applications
@@ -148,19 +263,6 @@
 //	// ... processing ...
 //	logger.FlushContext(ctx)
 //
-// # Configuration
-//
-// The library provides flexible configuration options:
-//
-//	config := logger.Config{
-//	    MinLevel:         logger.InfoLevel,    // Filter log levels
-//	    Output:           os.Stdout,           // Output destination
-//	    EnableSourceInfo: true,                // Include source file info
-//	    PrettifyJSON:     true,                // Pretty-print JSON
-//	    MaxLogEntries:    1000,                // Auto-flush threshold
-//	}
-//	logger.Init(config)
-//
 // # Security
 //
 // Built-in security features for sensitive data protection:
@@ -169,18 +271,50 @@
 //	passwordMasker := logger.NewPasswordMaskingMiddleware()
 //	logger.AddMiddleware(passwordMasker.Middleware())
 //
+//	// Custom password masking configuration
+//	passwordMasker := logger.NewPasswordMaskingMiddleware().
+//	    WithMaskString("[REDACTED]").
+//	    WithPasswordKeys([]string{"password", "secret", "token"}).
+//	    AddPasswordKey("api_key")
+//
+//	logger.AddMiddleware(passwordMasker.Middleware())
+//
+// # Error Handling
+//
+// Comprehensive error handling capabilities:
+//
+//	// Default error handler (writes to stderr)
+//	defaultHandler := logger.NewDefaultErrorHandler()
+//	logger.SetGlobalErrorHandler(defaultHandler)
+//
+//	// Custom output error handler
+//	fileHandler := logger.NewDefaultErrorHandlerWithOutput(errorLogFile)
+//	logger.SetGlobalErrorHandler(fileHandler)
+//
+//	// Silent error handler (ignores all errors)
+//	silentHandler := &logger.SilentErrorHandler{}
+//	logger.SetGlobalErrorHandler(silentHandler)
+//
+//	// Function-based error handler
+//	funcHandler := logger.ErrorHandlerFunc(func(operation string, err error) {
+//	    fmt.Printf("Logger error in %s: %v\n", operation, err)
+//	})
+//	logger.SetGlobalErrorHandler(funcHandler)
+//
 // # Performance
 //
 // Optimized for performance with:
-//   - Minimal allocation overhead
+//   - Zero external dependencies
+//   - Minimal allocation overhead with memory pooling
 //   - Efficient JSON marshaling
 //   - Configurable auto-flush for memory management
 //   - Thread-safe concurrent operations
+//   - Object pooling for LogEntry and slice reuse
 //
 // # Compatibility
 //
 // The library is compatible with:
-//   - Go 1.21+
+//   - Go 1.22+
 //   - Standard library HTTP servers
 //   - Popular HTTP frameworks (Gin, Echo, Gorilla, etc.)
 //   - Cloud-native environments
@@ -197,7 +331,22 @@
 //
 //	import "github.com/zentooo/logspan/http_middleware"
 //
-//	handler := http_middleware.LoggingMiddleware(yourHandler)
-//	http.Handle("/", handler)
+//	mux := http.NewServeMux()
+//	handler := http_middleware.LoggingMiddleware(mux)
+//
+//	mux.HandleFunc("/api/users", func(w http.ResponseWriter, r *http.Request) {
+//	    ctx := r.Context()
+//
+//	    // Request information is automatically added
+//	    logger.Infof(ctx, "Fetching user list")
+//
+//	    // Additional context information
+//	    logger.AddContextValue(ctx, "query_params", r.URL.Query())
+//
+//	    logger.Infof(ctx, "User list fetch completed")
+//	    // FlushContext is called automatically
+//	})
+//
+//	http.ListenAndServe(":8080", handler)
 
 package logspan
