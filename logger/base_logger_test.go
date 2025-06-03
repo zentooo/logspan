@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/zentooo/logspan/pkg/formatter"
+	"github.com/zentooo/logspan/formatter"
 )
 
 func TestBaseLogger_SetOutput(t *testing.T) {

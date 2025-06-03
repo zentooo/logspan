@@ -75,7 +75,7 @@ go get github.com/zentooo/logspan
 ```go
 package main
 
-import "github.com/zentooo/logspan/pkg/logger"
+import "github.com/zentooo/logspan/logger"
 
 func main() {
     // グローバルダイレクトロガーを使用
@@ -92,7 +92,7 @@ package main
 
 import (
     "context"
-    "github.com/zentooo/logspan/pkg/logger"
+    "github.com/zentooo/logspan/logger"
 )
 
 func main() {
@@ -128,7 +128,7 @@ func processRequest(ctx context.Context) {
 #### グローバル設定
 
 ```go
-import "github.com/zentooo/logspan/pkg/logger"
+import "github.com/zentooo/logspan/logger"
 
 func init() {
     config := logger.Config{
@@ -267,7 +267,7 @@ package main
 
 import (
     "context"
-    "github.com/zentooo/logspan/pkg/logger"
+    "github.com/zentooo/logspan/logger"
 )
 
 func main() {
@@ -452,7 +452,7 @@ contextLogger.SetFormatter(formatter.NewJSONFormatter())
 #### ContextFlattenフォーマッター
 
 ```go
-import "github.com/zentooo/logspan/pkg/formatter"
+import "github.com/zentooo/logspan/formatter"
 
 contextLogger := logger.NewContextLogger()
 contextLogger.SetFormatter(formatter.NewContextFlattenFormatter())

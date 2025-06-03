@@ -4,7 +4,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/zentooo/logspan/pkg/formatter"
+	"github.com/zentooo/logspan/formatter"
 )
 
 // BaseLogger contains common fields and methods shared by DirectLogger and ContextLogger

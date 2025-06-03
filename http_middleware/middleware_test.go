@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zentooo/logspan/pkg/logger"
+	"github.com/zentooo/logspan/logger"
 )
 
 func TestLoggingMiddleware(t *testing.T) {

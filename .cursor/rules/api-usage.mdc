@@ -276,7 +276,7 @@ formatter.NewContextFlattenFormatterWithIndent("  ")  // Pretty-printed context-
 
 ### Setting up HTTP Logging
 ```go
-import "github.com/zentooo/logspan/pkg/http_middleware"
+import "github.com/zentooo/logspan/http_middleware"
 
 // Apply logging middleware to HTTP handler
 handler := http_middleware.LoggingMiddleware(yourHandler)

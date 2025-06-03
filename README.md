@@ -69,33 +69,36 @@ go get github.com/zentooo/logspan
 
 ## 🚀 Quick Start
 
-### Direct Logger (Immediate Output)
+### Installation
 
-```go
-package main
-
-import "github.com/zentooo/logspan/pkg/logger"
-
-func main() {
-    // Use global direct logger
-    logger.D.Infof("Application started")
-    logger.D.Warnf("Warning: %s", "Configuration file not found")
-    logger.D.Errorf("Error: %v", err)
-}
+```bash
+go get github.com/zentooo/logspan
 ```
 
-### Context Logger (Log Aggregation)
+### Basic Usage
 
 ```go
 package main
 
 import (
     "context"
-    "github.com/zentooo/logspan/pkg/logger"
+    "os"
+
+    "github.com/zentooo/logspan/logger"
 )
 
 func main() {
-    // Create context logger
+    // Initialize logger
+    logger.Init(logger.Config{
+        MinLevel:     logger.InfoLevel,
+        Output:       os.Stdout,
+        PrettifyJSON: true,
+    })
+
+    // Direct logging
+    logger.D.Infof("Application started")
+
+    // Context-based logging
     ctx := context.Background()
     contextLogger := logger.NewContextLogger()
     ctx = logger.WithLogger(ctx, contextLogger)
@@ -127,7 +130,7 @@ func processRequest(ctx context.Context) {
 #### Global Configuration
 
 ```go
-import "github.com/zentooo/logspan/pkg/logger"
+import "github.com/zentooo/logspan/logger"
 
 func init() {
     config := logger.Config{
@@ -229,8 +232,8 @@ package main
 
 import (
     "net/http"
-    "github.com/zentooo/logspan/pkg/http_middleware"
-    "github.com/zentooo/logspan/pkg/logger"
+    "github.com/zentooo/logspan/http_middleware"
+    "github.com/zentooo/logspan/logger"
 )
 
 func main() {
@@ -328,10 +331,32 @@ contextLogger.SetFormatter(formatter.NewJSONFormatter())
 #### Context Flatten Formatter
 
 ```go
-import "github.com/zentooo/logspan/pkg/formatter"
+import "github.com/zentooo/logspan/formatter"
 
 contextLogger := logger.NewContextLogger()
 contextLogger.SetFormatter(formatter.NewContextFlattenFormatter())
+```
+
+### Setting Custom Formatters
+```go
+// For DirectLogger
+directLogger := logger.NewDirectLogger()
+directLogger.SetFormatter(formatter.NewContextFlattenFormatter())
+
+// For ContextLogger
+contextLogger := logger.NewContextLogger()
+contextLogger.SetFormatter(formatter.NewContextFlattenFormatterWithIndent("  "))
+```
+
+### Available Formatters
+```go
+// JSON Formatters
+formatter.NewJSONFormatter()                           // Compact JSON
+formatter.NewJSONFormatterWithIndent("  ")            // Pretty-printed JSON
+
+// Context Flatten Formatters
+formatter.NewContextFlattenFormatter()                 // Compact context-flattened format
+formatter.NewContextFlattenFormatterWithIndent("  ")  // Pretty-printed context-flattened format
 ```
 
 ## 📋 Log Output Formats

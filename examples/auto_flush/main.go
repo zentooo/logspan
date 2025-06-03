@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zentooo/logspan/pkg/logger"
+	"github.com/zentooo/logspan/logger"
 )
 
 func main() {

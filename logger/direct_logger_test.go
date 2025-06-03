@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zentooo/logspan/pkg/formatter"
+	"github.com/zentooo/logspan/formatter"
 )
 
 func TestDirectLogger_BasicLogging(t *testing.T) {

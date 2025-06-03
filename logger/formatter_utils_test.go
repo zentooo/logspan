@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zentooo/logspan/pkg/formatter"
+	"github.com/zentooo/logspan/formatter"
 )
 
 func TestFormatterUtils_CreateDefaultFormatter(t *testing.T) {

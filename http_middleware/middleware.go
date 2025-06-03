@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/zentooo/logspan/pkg/logger"
+	"github.com/zentooo/logspan/logger"
 )
 
 // LoggingMiddleware creates an HTTP middleware that automatically sets up logging context

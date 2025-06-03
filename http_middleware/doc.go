@@ -18,8 +18,8 @@
 //
 //	import (
 //	    "net/http"
-//	    "github.com/zentooo/logspan/pkg/http_middleware"
-//	    "github.com/zentooo/logspan/pkg/logger"
+//	    "github.com/zentooo/logspan/http_middleware"
+//	    "github.com/zentooo/logspan/logger"
 //	)
 //
 //	func main() {

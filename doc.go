@@ -9,9 +9,9 @@
 //
 // The logspan library consists of three main packages:
 //
-//   - github.com/zentooo/logspan/pkg/logger: Core logging functionality
-//   - github.com/zentooo/logspan/pkg/formatter: Output formatting capabilities
-//   - github.com/zentooo/logspan/pkg/http_middleware: HTTP server integration
+//   - github.com/zentooo/logspan/logger: Core logging functionality
+//   - github.com/zentooo/logspan/formatter: Output formatting capabilities
+//   - github.com/zentooo/logspan/http_middleware: HTTP server integration
 //
 // # Quick Start
 //
@@ -19,7 +19,7 @@
 //
 //	import (
 //	    "context"
-//	    "github.com/zentooo/logspan/pkg/logger"
+//	    "github.com/zentooo/logspan/logger"
 //	)
 //
 //	func main() {
@@ -114,7 +114,7 @@
 //
 // Perfect for web applications that need request-scoped logging:
 //
-//	import "github.com/zentooo/logspan/pkg/http_middleware"
+//	import "github.com/zentooo/logspan/http_middleware"
 //
 //	handler := http_middleware.LoggingMiddleware(yourHandler)
 //	http.Handle("/", handler)
@@ -190,4 +190,14 @@
 //   - pkg/logger: Core logging functionality
 //   - pkg/formatter: Output formatting
 //   - pkg/http_middleware: HTTP integration
+//
+// # HTTP Integration
+//
+// Seamless HTTP server integration with automatic context setup:
+//
+//	import "github.com/zentooo/logspan/http_middleware"
+//
+//	handler := http_middleware.LoggingMiddleware(yourHandler)
+//	http.Handle("/", handler)
+
 package logspan

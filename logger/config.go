@@ -5,7 +5,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/zentooo/logspan/pkg/formatter"
+	"github.com/zentooo/logspan/formatter"
 )
 
 // Config holds the configuration for the logger

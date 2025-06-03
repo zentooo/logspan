@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/zentooo/logspan/pkg/formatter"
-	"github.com/zentooo/logspan/pkg/logger"
+	"github.com/zentooo/logspan/formatter"
+	"github.com/zentooo/logspan/logger"
 )
 
 func main() {

@@ -3,7 +3,7 @@ package logger
 import (
 	"time"
 
-	"github.com/zentooo/logspan/pkg/formatter"
+	"github.com/zentooo/logspan/formatter"
 )
 
 // createDefaultFormatter creates a default formatter based on global configuration

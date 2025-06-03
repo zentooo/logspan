@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/zentooo/logspan/pkg/logger"
+	"github.com/zentooo/logspan/logger"
 )
 
 func main() {

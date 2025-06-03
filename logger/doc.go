@@ -79,7 +79,7 @@
 //
 // Automatic HTTP request logging with context setup:
 //
-//	import "github.com/zentooo/logspan/pkg/http_middleware"
+//	import "github.com/zentooo/logspan/http_middleware"
 //
 //	handler := http_middleware.LoggingMiddleware(yourHandler)
 //	http.Handle("/", handler)
