@@ -1,4 +1,9 @@
 # Changelog
+## v0.0.5 (2025-06-03)
+
+### Changes
+- Merge branch 'main' of github.com:zentooo/logspan (a415f46)
+- Update .gitignore to include progress.md and restore Thumbs.db; remove progress.md file. (e041c3a)
 ## v0.0.4 (2025-06-03)
 
 ### Changes
