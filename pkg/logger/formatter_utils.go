@@ -40,9 +40,16 @@ func formatLogOutput(entries []*LogEntry, contextFields map[string]interface{}, 
 		}
 	}
 
+	// Get log type from global configuration
+	config := GetConfig()
+	logType := config.LogType
+	if logType == "" {
+		logType = "request" // Default value for backward compatibility
+	}
+
 	// Create LogOutput structure
 	logOutput := &formatter.LogOutput{
-		Type:    "request",
+		Type:    logType,
 		Context: contextFields,
 		Runtime: formatter.RuntimeInfo{
 			Severity:  maxSeverity.String(),
