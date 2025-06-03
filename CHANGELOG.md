@@ -1,4 +1,9 @@
 # Changelog
+## v0.0.3 (2025-06-03)
+
+### Changes
+- Merge branch 'main' of github.com:zentooo/logspan (5fee439)
+- chore: update renovate.json to include package rules for action dependencies with pinned digests (5a4cfb7)
 ## v0.0.2 (2025-06-03)
 
 ### Changes
