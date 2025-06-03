@@ -102,11 +102,20 @@ func (l *ContextLogger) flushInternal() {
 	jsonData, err := formatLogOutput(l.entries, l.fields, l.startTime, endTime, l.formatter)
 	if err != nil {
 		// Fallback to simple output if formatting fails
-		fmt.Fprintf(l.output, "Error formatting log: %v\n", err)
+		if _, writeErr := fmt.Fprintf(l.output, "Error formatting log: %v\n", err); writeErr != nil {
+			// If we can't even write the error message, there's not much we can do
+			// This is a best-effort attempt to log the error
+			// We intentionally ignore this error as it's a fallback scenario
+		}
 		return
 	}
 
-	fmt.Fprintf(l.output, "%s\n", jsonData)
+	if _, err := fmt.Fprintf(l.output, "%s\n", jsonData); err != nil {
+		// If writing fails, try to write an error message
+		// This is a best-effort attempt since the output might be broken
+		// We intentionally ignore any error from this fallback write
+		_, _ = fmt.Fprintf(l.output, "Error writing log output: %v\n", err)
+	}
 
 	// Clear entries after flushing and reset start time
 	l.entries = l.entries[:0] // Clear slice but keep capacity

@@ -102,53 +102,6 @@ func (pmm *PasswordMaskingMiddleware) maskPasswordsInMessage(message string) str
 	return result
 }
 
-// maskPasswordsInFields masks password values in the fields map
-func (pmm *PasswordMaskingMiddleware) maskPasswordsInFields(fields map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-
-	for key, value := range fields {
-		if pmm.isPasswordKey(key) {
-			result[key] = pmm.MaskString
-		} else {
-			// Recursively handle nested maps
-			switch v := value.(type) {
-			case map[string]interface{}:
-				result[key] = pmm.maskPasswordsInFields(v)
-			case map[interface{}]interface{}:
-				result[key] = pmm.maskPasswordsInGenericMap(v)
-			default:
-				result[key] = value
-			}
-		}
-	}
-
-	return result
-}
-
-// maskPasswordsInGenericMap handles map[interface{}]interface{} type
-func (pmm *PasswordMaskingMiddleware) maskPasswordsInGenericMap(fields map[interface{}]interface{}) map[interface{}]interface{} {
-	result := make(map[interface{}]interface{})
-
-	for key, value := range fields {
-		keyStr, ok := key.(string)
-		if ok && pmm.isPasswordKey(keyStr) {
-			result[key] = pmm.MaskString
-		} else {
-			// Recursively handle nested maps
-			switch v := value.(type) {
-			case map[string]interface{}:
-				result[key] = pmm.maskPasswordsInFields(v)
-			case map[interface{}]interface{}:
-				result[key] = pmm.maskPasswordsInGenericMap(v)
-			default:
-				result[key] = value
-			}
-		}
-	}
-
-	return result
-}
-
 // isPasswordKey checks if a key is considered a password field (case-insensitive)
 func (pmm *PasswordMaskingMiddleware) isPasswordKey(key string) bool {
 	lowerKey := strings.ToLower(key)

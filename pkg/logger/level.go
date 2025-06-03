@@ -16,19 +16,28 @@ const (
 	CriticalLevel
 )
 
+// Log level string constants
+const (
+	debugLevelString    = "DEBUG"
+	infoLevelString     = "INFO"
+	warnLevelString     = "WARN"
+	errorLevelString    = "ERROR"
+	criticalLevelString = "CRITICAL"
+)
+
 // String returns the string representation of the log level
 func (l LogLevel) String() string {
 	switch l {
 	case DebugLevel:
-		return "DEBUG"
+		return debugLevelString
 	case InfoLevel:
-		return "INFO"
+		return infoLevelString
 	case WarnLevel:
-		return "WARN"
+		return warnLevelString
 	case ErrorLevel:
-		return "ERROR"
+		return errorLevelString
 	case CriticalLevel:
-		return "CRITICAL"
+		return criticalLevelString
 	default:
 		return "UNKNOWN"
 	}
@@ -37,15 +46,15 @@ func (l LogLevel) String() string {
 // ParseLogLevel parses a string into a LogLevel
 func ParseLogLevel(level string) LogLevel {
 	switch level {
-	case "DEBUG":
+	case debugLevelString:
 		return DebugLevel
-	case "INFO":
+	case infoLevelString:
 		return InfoLevel
-	case "WARN":
+	case warnLevelString:
 		return WarnLevel
-	case "ERROR":
+	case errorLevelString:
 		return ErrorLevel
-	case "CRITICAL":
+	case criticalLevelString:
 		return CriticalLevel
 	default:
 		return InfoLevel // Default to INFO level
