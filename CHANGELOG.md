@@ -1,4 +1,9 @@
 # Changelog
+## v0.0.4 (2025-06-03)
+
+### Changes
+- Merge pull request #5 from zentooo/renovate/pin-dependencies (3963699)
+- chore(deps): pin dependencies (d55af2d)
 ## v0.0.3 (2025-06-03)
 
 ### Changes
