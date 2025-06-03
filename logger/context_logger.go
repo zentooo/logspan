@@ -62,11 +62,11 @@ func (l *ContextLogger) addEntry(level LogLevel, message string) {
 				if fn := runtime.FuncForPC(pc); fn != nil {
 					funcName := fn.Name()
 					// If we find a context.go function in the stack, use skip level 4
-					if strings.Contains(funcName, "/pkg/logger.Infof") ||
-						strings.Contains(funcName, "/pkg/logger.Debugf") ||
-						strings.Contains(funcName, "/pkg/logger.Warnf") ||
-						strings.Contains(funcName, "/pkg/logger.Errorf") ||
-						strings.Contains(funcName, "/pkg/logger.Criticalf") {
+					if strings.Contains(funcName, "/logger.Infof") ||
+						strings.Contains(funcName, "/logger.Debugf") ||
+						strings.Contains(funcName, "/logger.Warnf") ||
+						strings.Contains(funcName, "/logger.Errorf") ||
+						strings.Contains(funcName, "/logger.Criticalf") {
 						skipLevel = 4
 						break
 					}

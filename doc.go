@@ -187,9 +187,9 @@
 //   - Container deployments
 //
 // For detailed documentation of individual packages, see:
-//   - pkg/logger: Core logging functionality
-//   - pkg/formatter: Output formatting
-//   - pkg/http_middleware: HTTP integration
+//   - logger: Core logging functionality
+//   - formatter: Output formatting
+//   - http_middleware: HTTP integration
 //
 // # HTTP Integration
 //

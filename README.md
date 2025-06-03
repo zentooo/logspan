@@ -691,7 +691,7 @@ go test -v ./...
 ### Package Structure
 
 ```
-pkg/
+logspan/
 ├── logger/                          # Main logger package
 │   ├── logger.go                   # Core interface and API
 │   ├── base_logger.go              # Base logger with common functionality
