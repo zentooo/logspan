@@ -33,9 +33,6 @@ The default log output follows this structure:
         "message": "Validating input parameters"
       }
     ]
-  },
-  "config": {
-    "elapsedUnit": "ms"
   }
 }
 ```
@@ -63,9 +60,6 @@ When `PrettifyJSON` is enabled in the configuration:
         "message": "Request processing started"
       }
     ]
-  },
-  "config": {
-    "elapsedUnit": "ms"
   }
 }
 ```
@@ -76,7 +70,6 @@ When `PrettifyJSON` is enabled in the configuration:
 - `type`: Log type (always "request")
 - `context`: Common context information for the entire request/processing unit
 - `runtime`: Runtime information and log entries
-- `config`: Logger configuration
 
 ### Runtime Section
 - `severity`: Highest log level among all entries in this context
@@ -116,16 +109,13 @@ When using ContextFlatten formatter, the context fields are flattened to the top
         "message": "Validating input parameters"
       }
     ]
-  },
-  "config": {
-    "elapsedUnit": "ms"
   }
 }
 ```
 
 ### Context Flatten Features
 - Context fields are moved to the top level for easier access
-- Original structure (`type`, `runtime`, `config`) is preserved
+- Original structure (`type`, `runtime`) is preserved
 - If context keys conflict with top-level keys, context values take precedence
 - Supports both compact and pretty-printed formats
 
@@ -150,9 +140,6 @@ Direct logger outputs single entries immediately:
         "message": "Direct log message"
       }
     ]
-  },
-  "config": {
-    "elapsedUnit": "ms"
   }
 }
 ```
@@ -173,9 +160,6 @@ Direct logger outputs single entries immediately:
         "message": "Direct log message"
       }
     ]
-  },
-  "config": {
-    "elapsedUnit": "ms"
   }
 }
 ```

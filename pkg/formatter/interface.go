@@ -16,7 +16,6 @@ type LogOutput struct {
 	Type    string                 `json:"type"`
 	Context map[string]interface{} `json:"context"`
 	Runtime RuntimeInfo            `json:"runtime"`
-	Config  ConfigInfo             `json:"config"`
 }
 
 // RuntimeInfo contains runtime information for the log output
@@ -26,11 +25,6 @@ type RuntimeInfo struct {
 	EndTime   string      `json:"endTime"`
 	Elapsed   int64       `json:"elapsed"`
 	Lines     []*LogEntry `json:"lines"`
-}
-
-// ConfigInfo contains configuration information
-type ConfigInfo struct {
-	ElapsedUnit string `json:"elapsedUnit"`
 }
 
 // Formatter defines the interface for log formatters

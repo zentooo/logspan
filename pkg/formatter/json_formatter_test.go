@@ -25,9 +25,6 @@ func TestJSONFormatter_Format(t *testing.T) {
 			Elapsed:   1000,
 			Lines:     []*LogEntry{entry},
 		},
-		Config: ConfigInfo{
-			ElapsedUnit: "ms",
-		},
 	}
 
 	result, err := formatter.Format(output)
@@ -60,9 +57,6 @@ func TestJSONFormatter_FormatWithIndent(t *testing.T) {
 			EndTime:   "2023-10-27T10:00:00.223456Z",
 			Elapsed:   0,
 			Lines:     []*LogEntry{},
-		},
-		Config: ConfigInfo{
-			ElapsedUnit: "ms",
 		},
 	}
 
@@ -98,9 +92,6 @@ func TestJSONFormatter_FormatCompact(t *testing.T) {
 			EndTime:   "2023-10-27T10:00:00.223456Z",
 			Elapsed:   0,
 			Lines:     []*LogEntry{},
-		},
-		Config: ConfigInfo{
-			ElapsedUnit: "ms",
 		},
 	}
 

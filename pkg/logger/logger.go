@@ -102,9 +102,6 @@ func formatLogOutput(entries []*LogEntry, contextFields map[string]interface{}, 
 			Elapsed:   elapsed,
 			Lines:     formatterEntries,
 		},
-		Config: formatter.ConfigInfo{
-			ElapsedUnit: "ms",
-		},
 	}
 
 	// Use provided formatter or default JSONFormatter

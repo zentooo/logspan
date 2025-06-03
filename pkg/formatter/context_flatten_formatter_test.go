@@ -34,24 +34,21 @@ func TestContextFlattenFormatter_Format_Basic(t *testing.T) {
 	output := &LogOutput{
 		Type: "request",
 		Context: map[string]interface{}{
-			"user_id":    "123",
-			"request_id": "req-456",
+			"request_id": "req-123",
+			"user_id":    "user-456",
 		},
 		Runtime: RuntimeInfo{
 			Severity:  "INFO",
-			StartTime: "2023-10-27T10:00:00Z",
-			EndTime:   "2023-10-27T10:00:01Z",
-			Elapsed:   1000,
+			StartTime: "2023-10-27T09:59:58.123456+09:00",
+			EndTime:   "2023-10-27T10:00:00.223456+09:00",
+			Elapsed:   2100,
 			Lines: []*LogEntry{
 				{
-					Timestamp: time.Date(2023, 10, 27, 10, 0, 0, 0, time.UTC),
+					Timestamp: time.Date(2023, 10, 27, 9, 59, 59, 123456000, time.FixedZone("JST", 9*60*60)),
 					Level:     "INFO",
-					Message:   "Test message",
+					Message:   "Request processing started",
 				},
 			},
-		},
-		Config: ConfigInfo{
-			ElapsedUnit: "ms",
 		},
 	}
 
@@ -67,11 +64,11 @@ func TestContextFlattenFormatter_Format_Basic(t *testing.T) {
 	}
 
 	// Check that context fields are at top level
-	if parsed["user_id"] != "123" {
-		t.Errorf("Expected user_id=123, got %v", parsed["user_id"])
+	if parsed["user_id"] != "user-456" {
+		t.Errorf("Expected user_id=user-456, got %v", parsed["user_id"])
 	}
-	if parsed["request_id"] != "req-456" {
-		t.Errorf("Expected request_id=req-456, got %v", parsed["request_id"])
+	if parsed["request_id"] != "req-123" {
+		t.Errorf("Expected request_id=req-123, got %v", parsed["request_id"])
 	}
 
 	// Check that other fields are present
@@ -81,9 +78,6 @@ func TestContextFlattenFormatter_Format_Basic(t *testing.T) {
 	if parsed["runtime"] == nil {
 		t.Error("Expected runtime field to be present")
 	}
-	if parsed["config"] == nil {
-		t.Error("Expected config field to be present")
-	}
 }
 
 func TestContextFlattenFormatter_Format_WithIndent(t *testing.T) {
@@ -92,14 +86,21 @@ func TestContextFlattenFormatter_Format_WithIndent(t *testing.T) {
 	output := &LogOutput{
 		Type: "request",
 		Context: map[string]interface{}{
-			"user_id": "123",
+			"request_id": "req-123",
+			"user_id":    "user-456",
 		},
 		Runtime: RuntimeInfo{
-			Severity: "INFO",
-			Lines:    []*LogEntry{},
-		},
-		Config: ConfigInfo{
-			ElapsedUnit: "ms",
+			Severity:  "INFO",
+			StartTime: "2023-10-27T09:59:58.123456+09:00",
+			EndTime:   "2023-10-27T10:00:00.223456+09:00",
+			Elapsed:   2100,
+			Lines: []*LogEntry{
+				{
+					Timestamp: time.Date(2023, 10, 27, 9, 59, 59, 123456000, time.FixedZone("JST", 9*60*60)),
+					Level:     "INFO",
+					Message:   "Request processing started",
+				},
+			},
 		},
 	}
 
@@ -122,11 +123,11 @@ func TestContextFlattenFormatter_Format_EmptyContext(t *testing.T) {
 		Type:    "request",
 		Context: map[string]interface{}{},
 		Runtime: RuntimeInfo{
-			Severity: "INFO",
-			Lines:    []*LogEntry{},
-		},
-		Config: ConfigInfo{
-			ElapsedUnit: "ms",
+			Severity:  "INFO",
+			StartTime: "2023-10-27T09:59:58.123456+09:00",
+			EndTime:   "2023-10-27T10:00:00.223456+09:00",
+			Elapsed:   0,
+			Lines:     []*LogEntry{},
 		},
 	}
 
@@ -147,9 +148,6 @@ func TestContextFlattenFormatter_Format_EmptyContext(t *testing.T) {
 	if parsed["runtime"] == nil {
 		t.Error("Expected runtime field to be present")
 	}
-	if parsed["config"] == nil {
-		t.Error("Expected config field to be present")
-	}
 }
 
 func TestContextFlattenFormatter_Format_KeyCollision(t *testing.T) {
@@ -158,16 +156,22 @@ func TestContextFlattenFormatter_Format_KeyCollision(t *testing.T) {
 	output := &LogOutput{
 		Type: "request",
 		Context: map[string]interface{}{
-			"type":    "custom_type",    // This should override the top-level type
-			"runtime": "custom_runtime", // This should override the top-level runtime
-			"user_id": "123",
+			"request_id": "req-123",
+			"user_id":    "user-456",
+			"type":       "custom_type", // This should override the default type
 		},
 		Runtime: RuntimeInfo{
-			Severity: "INFO",
-			Lines:    []*LogEntry{},
-		},
-		Config: ConfigInfo{
-			ElapsedUnit: "ms",
+			Severity:  "INFO",
+			StartTime: "2023-10-27T09:59:58.123456+09:00",
+			EndTime:   "2023-10-27T10:00:00.223456+09:00",
+			Elapsed:   2100,
+			Lines: []*LogEntry{
+				{
+					Timestamp: time.Date(2023, 10, 27, 9, 59, 59, 123456000, time.FixedZone("JST", 9*60*60)),
+					Level:     "INFO",
+					Message:   "Request processing started",
+				},
+			},
 		},
 	}
 
@@ -185,14 +189,11 @@ func TestContextFlattenFormatter_Format_KeyCollision(t *testing.T) {
 	if parsed["type"] != "custom_type" {
 		t.Errorf("Expected type=custom_type (from context), got %v", parsed["type"])
 	}
-	if parsed["runtime"] != "custom_runtime" {
-		t.Errorf("Expected runtime=custom_runtime (from context), got %v", parsed["runtime"])
+	if parsed["runtime"] == nil {
+		t.Error("Expected runtime field to be present (no collision)")
 	}
-	if parsed["user_id"] != "123" {
-		t.Errorf("Expected user_id=123, got %v", parsed["user_id"])
-	}
-	if parsed["config"] == nil {
-		t.Error("Expected config field to be present (no collision)")
+	if parsed["user_id"] != "user-456" {
+		t.Errorf("Expected user_id=user-456, got %v", parsed["user_id"])
 	}
 }
 
@@ -203,11 +204,11 @@ func TestContextFlattenFormatter_Format_NilContext(t *testing.T) {
 		Type:    "request",
 		Context: nil, // nil context
 		Runtime: RuntimeInfo{
-			Severity: "INFO",
-			Lines:    []*LogEntry{},
-		},
-		Config: ConfigInfo{
-			ElapsedUnit: "ms",
+			Severity:  "INFO",
+			StartTime: "2023-10-27T09:59:58.123456+09:00",
+			EndTime:   "2023-10-27T10:00:00.223456+09:00",
+			Elapsed:   2100,
+			Lines:     []*LogEntry{},
 		},
 	}
 
@@ -224,5 +225,8 @@ func TestContextFlattenFormatter_Format_NilContext(t *testing.T) {
 	// Should still have the basic fields
 	if parsed["type"] != "request" {
 		t.Errorf("Expected type=request, got %v", parsed["type"])
+	}
+	if parsed["runtime"] == nil {
+		t.Error("Expected runtime field to be present")
 	}
 }

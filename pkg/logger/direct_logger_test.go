@@ -397,7 +397,7 @@ func TestDirectLogger_StructuredOutput(t *testing.T) {
 	}
 
 	// 構造化ログの必須フィールドを確認
-	expectedFields := []string{"type", "context", "runtime", "config"}
+	expectedFields := []string{"type", "context", "runtime"}
 	for _, field := range expectedFields {
 		if _, exists := logData[field]; !exists {
 			t.Errorf("Expected field %s in log output", field)

@@ -44,9 +44,6 @@ func (f *ContextFlattenFormatter) Format(output *LogOutput) ([]byte, error) {
 	if _, exists := flattened["runtime"]; !exists {
 		flattened["runtime"] = output.Runtime
 	}
-	if _, exists := flattened["config"]; !exists {
-		flattened["config"] = output.Config
-	}
 
 	// Marshal the flattened structure
 	if f.Indent == "" {

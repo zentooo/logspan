@@ -106,3 +106,76 @@ ContextFlattenFormatterの実装が完了したため、不要になったDataDo
 1. まずファイル削除を行う
 2. 次にドキュメントを順次更新する
 3. 最後に全体の動作確認を行う
+
+---
+
+# ConfigInfo削除タスク
+
+## タスク概要
+ConfigInfoが不要になったため、全面的に削除し、関連するコードとテストを更新する。
+
+## 要件分析
+- ConfigInfoは現在`pkg/formatter/interface.go`で定義されている
+- LogOutput構造体のConfigフィールドで使用されている
+- 各フォーマッターのテストファイルで使用されている
+- 実際の使用例でも使用されている
+
+## サブタスク
+
+### 1. ConfigInfo削除の影響調査
+- [x] 1-1. ConfigInfoの使用箇所特定
+- [x] 1-2. 削除による影響範囲の確認
+
+### 2. コア実装の更新
+- [x] 2-1. `pkg/formatter/interface.go`からConfigInfo定義とConfigフィールドを削除
+- [x] 2-2. `pkg/logger/logger.go`でのConfigInfo使用箇所を削除
+
+### 3. フォーマッター実装の更新
+- [x] 3-1. `pkg/formatter/json_formatter.go`の更新（Configフィールド削除）
+- [x] 3-2. `pkg/formatter/context_flatten_formatter.go`の更新（Configフィールド削除）
+
+### 4. テストファイルの更新
+- [x] 4-1. `pkg/formatter/json_formatter_test.go`の更新
+- [x] 4-2. `pkg/formatter/context_flatten_formatter_test.go`の更新
+- [x] 4-3. `pkg/logger/direct_logger_test.go`の更新
+
+### 5. 使用例の更新
+- [x] 5-1. `examples/context_flatten_formatter/main.go`の更新
+
+### 6. ドキュメント更新
+- [x] 6-1. API Usage Guideの更新（ConfigInfo関連記述の削除）
+- [x] 6-2. Log Format Guideの更新（configフィールドの削除）
+
+### 7. 動作確認
+- [x] 7-1. 全テストの実行確認
+- [x] 7-2. 削除による影響がないことの確認
+
+## 進め方
+1. まずコア実装（interface.go）を更新
+2. 各フォーマッター実装を更新
+3. テストファイルを更新
+4. 使用例を更新
+5. ドキュメントを更新
+6. 最後に全体の動作確認を行う
+
+## 進捗
+- [x] プランニング完了
+- [x] 実装完了
+
+## 完了サマリー
+
+### 削除されたコード
+- `pkg/formatter/interface.go`: ConfigInfo構造体定義とLogOutput.Configフィールド
+- `pkg/logger/logger.go`: ConfigInfo使用箇所
+- `pkg/formatter/context_flatten_formatter.go`: configフィールド処理
+- 全テストファイル: ConfigInfo使用箇所
+- `examples/context_flatten_formatter/main.go`: ConfigInfo使用箇所
+
+### 更新されたドキュメント
+- `.cursor/rules/log-format.mdc`: configフィールドの記述を削除
+
+### 動作確認結果
+- 全テスト成功: `go test ./...` - PASS
+- 全パッケージビルド成功: `go build ./...` - 成功
+- 使用例正常動作: `go run examples/context_flatten_formatter/main.go` - 成功
+- 削除による影響なし
