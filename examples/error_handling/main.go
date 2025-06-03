@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	fmt.Println("=== LogSpan Error Handling Examples ===\n")
+	fmt.Println("=== LogSpan Error Handling Examples ===")
 
 	// Example 1: Default Error Handler
 	fmt.Println("Example 1: Default Error Handler")
