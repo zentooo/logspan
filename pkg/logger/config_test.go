@@ -25,8 +25,12 @@ func TestDefaultConfig(t *testing.T) {
 		t.Errorf("Expected PrettifyJSON to be false, got %v", config.PrettifyJSON)
 	}
 
-	if config.MaxLogEntries != 1000 {
-		t.Errorf("Expected MaxLogEntries to be 1000, got %v", config.MaxLogEntries)
+	if config.MaxLogEntries != 0 {
+		t.Errorf("Expected MaxLogEntries to be 0, got %v", config.MaxLogEntries)
+	}
+
+	if config.ErrorHandler != nil {
+		t.Errorf("Expected ErrorHandler to be nil, got %v", config.ErrorHandler)
 	}
 }
 

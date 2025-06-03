@@ -56,15 +56,23 @@ func (l *DirectLogger) logf(level LogLevel, format string, args ...interface{}) 
 		// Use the formatter (default or explicitly set)
 		jsonData, err := formatLogOutput([]*LogEntry{processedEntry}, make(map[string]interface{}), processedEntry.Timestamp, processedEntry.Timestamp, l.formatter)
 		if err != nil {
-			_, _ = fmt.Fprintf(l.output, "Error formatting log: %v\n", err)
+			// Handle formatting error using error handler
+			handleError("format", err)
+			_, writeErr := fmt.Fprintf(l.output, "Error formatting log: %v\n", err)
+			if writeErr != nil {
+				handleError("write_fallback", writeErr)
+			}
 			return
 		}
 
 		if _, err := fmt.Fprintf(l.output, "%s\n", jsonData); err != nil {
-			// If writing fails, try to write an error message
-			// This is a best-effort attempt since the output might be broken
-			// We intentionally ignore any error from this fallback write
-			_, _ = fmt.Fprintf(l.output, "Error writing log output: %v\n", err)
+			// Handle write error using error handler
+			handleError("write", err)
+			// Try to write an error message as fallback
+			_, fallbackErr := fmt.Fprintf(l.output, "Error writing log output: %v\n", err)
+			if fallbackErr != nil {
+				handleError("write_error_fallback", fallbackErr)
+			}
 		}
 	})
 }

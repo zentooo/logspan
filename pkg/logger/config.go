@@ -8,23 +8,27 @@ import (
 	"github.com/zentooo/logspan/pkg/formatter"
 )
 
-// Config holds the global configuration for the logger
+// Config holds the configuration for the logger
 type Config struct {
-	// MinLevel sets the minimum log level for filtering
+	// MinLevel is the minimum log level for filtering
 	MinLevel LogLevel
 
-	// Output sets the output writer for logs
+	// Output is the output destination for logs
 	Output io.Writer
 
-	// EnableSourceInfo enables source file and line information in logs
+	// EnableSourceInfo enables source file information in log entries
 	EnableSourceInfo bool
 
-	// PrettifyJSON enables pretty-printing of JSON output with indentation
+	// PrettifyJSON enables pretty-printed JSON output
 	PrettifyJSON bool
 
-	// MaxLogEntries sets the maximum number of log entries to accumulate in ContextLogger
-	// before automatically flushing. 0 means no limit (default behavior)
+	// MaxLogEntries is the maximum number of log entries before auto-flush
+	// 0 means no limit (manual flush only)
 	MaxLogEntries int
+
+	// ErrorHandler is the error handler for logger errors
+	// If nil, the global error handler will be used
+	ErrorHandler ErrorHandler
 }
 
 // DefaultConfig returns a default configuration
@@ -34,7 +38,8 @@ func DefaultConfig() Config {
 		Output:           os.Stdout,
 		EnableSourceInfo: false,
 		PrettifyJSON:     false,
-		MaxLogEntries:    1000, // Default to 1000 entries before auto-flush
+		MaxLogEntries:    0,   // No auto-flush by default
+		ErrorHandler:     nil, // Use global error handler
 	}
 }
 
@@ -51,6 +56,12 @@ func Init(config Config) {
 	defer configMutex.Unlock()
 
 	globalConfig = config
+	initialized = true
+
+	// Set global error handler if provided
+	if config.ErrorHandler != nil {
+		SetGlobalErrorHandler(config.ErrorHandler)
+	}
 
 	// Update global direct logger with new configuration
 	if directLogger, ok := D.(*DirectLogger); ok {
@@ -66,14 +77,18 @@ func Init(config Config) {
 		}
 		directLogger.SetFormatter(jsonFormatter)
 	}
-
-	initialized = true
 }
 
-// GetConfig returns a copy of the current global configuration
+// GetConfig returns the current global configuration
+// If not initialized, returns default configuration
 func GetConfig() Config {
 	configMutex.RLock()
 	defer configMutex.RUnlock()
+
+	if !initialized {
+		return DefaultConfig()
+	}
+
 	return globalConfig
 }
 
