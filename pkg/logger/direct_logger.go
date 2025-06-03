@@ -29,7 +29,7 @@ func (l *DirectLogger) logf(level LogLevel, format string, args ...interface{}) 
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
-	// nilの出力先の場合は何もしない
+	// Do nothing if output is nil
 	if l.output == nil {
 		return
 	}

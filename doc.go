@@ -53,7 +53,7 @@
 //
 // # Architecture
 //
-// The library follows a modular architecture:
+// The library follows a modular architecture with improved separation of concerns:
 //
 //	┌─────────────────────────────────────────────────────────┐
 //	│                    Application Layer                    │
@@ -63,15 +63,50 @@
 //	│                    Logger Package                       │
 //	│  ┌─────────────────┐    ┌─────────────────────────────┐ │
 //	│  │ Context Logger  │    │      Direct Logger         │ │
-//	│  └─────────────────┘    └─────────────────────────────┘ │
+//	│  │                 │    │                             │ │
+//	│  └─────────┬───────┘    └─────────────┬───────────────┘ │
+//	│            │                          │                 │
+//	│            └──────────┬───────────────┘                 │
+//	│                       │                                 │
+//	│              ┌────────▼────────┐                        │
+//	│              │   Base Logger   │                        │
+//	│              │ (Shared Logic)  │                        │
+//	│              └─────────────────┘                        │
 //	├─────────────────────────────────────────────────────────┤
 //	│                 Middleware System                       │
+//	│  ┌─────────────────────────────────────────────────────┐ │
+//	│  │          Middleware Manager                         │ │
+//	│  │     (Global Middleware Management)                  │ │
+//	│  └─────────────────────────────────────────────────────┘ │
 //	├─────────────────────────────────────────────────────────┤
 //	│                 Formatter Package                       │
 //	│  ┌─────────────────┐    ┌─────────────────────────────┐ │
 //	│  │  JSON Formatter │    │ Context Flatten Formatter  │ │
 //	│  └─────────────────┘    └─────────────────────────────┘ │
+//	│  ┌─────────────────────────────────────────────────────┐ │
+//	│  │            Formatter Utils                          │ │
+//	│  │      (Shared Formatting Logic)                     │ │
+//	│  └─────────────────────────────────────────────────────┘ │
 //	└─────────────────────────────────────────────────────────┘
+//
+// ## Architecture Improvements
+//
+// The library has been refactored for better maintainability and performance:
+//
+// ### Code Deduplication
+// - **BaseLogger**: Common functionality shared between DirectLogger and ContextLogger
+// - **Unified Methods**: SetOutput, SetLevel, SetFormatter methods consolidated
+// - **Consistent Naming**: Standardized mutex naming and thread-safety patterns
+//
+// ### Responsibility Separation
+// - **middleware_manager.go**: Global middleware management isolated
+// - **formatter_utils.go**: Formatting utilities extracted to dedicated file
+// - **logger.go**: Focused on core interfaces and global instances
+//
+// ### Enhanced Testing
+// - **Comprehensive Coverage**: New test files for all major components
+// - **Concurrency Testing**: Robust goroutine safety verification
+// - **Edge Case Handling**: Thorough testing of error conditions and edge cases
 //
 // # Use Cases
 //

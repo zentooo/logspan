@@ -639,7 +639,30 @@ go test -cover ./...
 
 # 詳細なテスト出力
 go test -v ./...
+
+# カバレッジレポートの生成
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out -o coverage.html
 ```
+
+### テストカバレッジ
+
+LogSpanは高いテストカバレッジを維持しており、以下のような包括的なテストを提供しています：
+
+#### 主要テストファイル
+- **base_logger_test.go**: 共通ベースロガーの機能テスト
+- **config_test.go**: 設定管理機能のテスト
+- **context_test.go**: コンテキスト関連機能のテスト
+- **context_logger_test.go**: コンテキストロガーの包括的テスト
+- **direct_logger_test.go**: ダイレクトロガーの包括的テスト
+- **middleware_manager_test.go**: ミドルウェア管理機能のテスト
+- **formatter_utils_test.go**: フォーマット関連ユーティリティのテスト
+
+#### テストの特徴
+- **並行処理テスト**: goroutineセーフティの検証
+- **エラーケーステスト**: 異常系の動作確認
+- **カバレッジ最適化**: 重要な関数の100%カバレッジ
+- **統合テスト**: 実際の使用パターンでの動作確認
 
 ## 🏗️ アーキテクチャ
 
@@ -648,9 +671,12 @@ go test -v ./...
 ```
 pkg/
 ├── logger/                          # メインロガーパッケージ
-│   ├── logger.go                   # コアインターフェースとAPI
+│   ├── logger.go                   # コアインターフェースとグローバルインスタンス
+│   ├── base_logger.go              # 共通ベースロガー（共通機能の実装）
 │   ├── context_logger.go           # コンテキストロガー実装
 │   ├── direct_logger.go            # ダイレクトロガー実装
+│   ├── middleware_manager.go       # グローバルミドルウェア管理
+│   ├── formatter_utils.go          # フォーマット関連ユーティリティ
 │   ├── config.go                   # 設定管理
 │   ├── entry.go                    # ログエントリ構造
 │   ├── middleware.go               # ミドルウェア機構
@@ -677,6 +703,24 @@ pkg/
 3. **拡張性**: ミドルウェアによるカスタマイズ
 4. **パフォーマンス**: 効率的なログ処理
 5. **並行処理安全**: goroutineセーフな実装
+6. **責任の分離**: 機能別にファイルを分離し、保守性を向上
+
+### アーキテクチャの改善点
+
+#### コード重複の削除
+- **BaseLogger**: `DirectLogger`と`ContextLogger`の共通機能を`BaseLogger`に統合
+- **共通メソッド**: `SetOutput`, `SetLevel`, `SetFormatter`などの重複実装を削除
+- **一貫性**: mutex命名の統一とスレッドセーフティの向上
+
+#### 責任の明確化
+- **middleware_manager.go**: グローバルミドルウェア管理機能を独立したファイルに分離
+- **formatter_utils.go**: フォーマット関連ユーティリティを独立したファイルに分離
+- **logger.go**: コアインターフェースとグローバルインスタンスのみに集中
+
+#### テストカバレッジの向上
+- **新しいテストファイル**: `base_logger_test.go`, `config_test.go`, `context_test.go`などを追加
+- **カバレッジ改善**: 未カバーだった関数（`IsInitialized`, `AddContextValues`など）をテスト対象に追加
+- **並行テスト**: 並行処理の安全性を検証するテストを強化
 
 ## 🤝 コントリビューション
 
