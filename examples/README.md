@@ -32,6 +32,20 @@ go run examples/context_flatten_formatter/main.go
 
 Context Flatten Formatterは、contextフィールドをJSONのトップレベルに展開する形式でのログ出力に特化した例です。ログの可読性とアクセス性を向上させるフォーマットの使用方法を学べます。
 
+### Middleware Example
+```bash
+go run examples/middleware/main.go
+```
+
+Middlewareの使用例では、パスワードマスキングミドルウェアの基本的な使用方法から、カスタム設定、複数ミドルウェアのチェーン処理まで学べます。機密情報の自動マスキングやログ処理のカスタマイズ方法を理解できます。
+
+### Advanced Configuration Example
+```bash
+go run examples/advanced_config/main.go
+```
+
+Advanced Configurationでは、logspanライブラリの高度な設定オプションを学べます。ログレベルフィルタリング、カスタム出力先、自動フラッシュ設定、フォーマッター設定、Direct Loggerの詳細設定など、実用的な設定パターンを網羅しています。
+
 ### HTTP Middleware Example
 ```bash
 go run examples/http_middleware_example.go
@@ -53,6 +67,10 @@ examples/
 ├── context_flatten_formatter/
 │   ├── main.go          # Context Flatten Formatter 専用の使用例
 │   └── README.md        # Context Flatten Formatter の詳細説明
+├── middleware/
+│   └── main.go          # Middleware の使用例（パスワードマスキング等）
+├── advanced_config/
+│   └── main.go          # 高度な設定オプションの使用例
 └── http_middleware_example.go  # HTTP Middleware の使用例
 ```
 
@@ -63,6 +81,12 @@ examples/
 - **バッチ処理**: 効率的なログ出力とメモリ管理
 - **設定可能な制限**: アプリケーションの要件に応じた柔軟な設定
 
+### ミドルウェアシステム
+- **パスワードマスキング**: 機密情報の自動マスキング機能
+- **カスタムミドルウェア**: 独自のログ処理ロジックの追加
+- **ミドルウェアチェーン**: 複数のミドルウェアの組み合わせ
+- **設定可能なマスキング**: カスタムキーワードとマスキング文字列
+
 ### フォーマッター
 
 logspanライブラリは複数のログフォーマッターをサポートしています：
@@ -71,6 +95,12 @@ logspanライブラリは複数のログフォーマッターをサポートし�
 - **Context Flatten Formatter**: contextフィールドをトップレベルに展開する形式
 
 各exampleでは、これらのフォーマッターの使い分けを学ぶことができます。
+
+### 高度な設定オプション
+- **ログレベルフィルタリング**: 動的なログレベル制御
+- **カスタム出力先**: ファイル、標準出力、カスタムWriter
+- **ソース情報**: ファイル名・行番号の自動追加
+- **JSON整形**: 開発時の可読性向上オプション
 
 ## 注意事項
 
