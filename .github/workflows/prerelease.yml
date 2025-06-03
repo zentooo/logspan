@@ -1,0 +1,162 @@
+name: Pre-release
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+    inputs:
+      prerelease_type:
+        description: 'Pre-release type'
+        required: true
+        default: 'beta'
+        type: choice
+        options:
+          - alpha
+          - beta
+          - rc
+
+permissions:
+  contents: write
+
+jobs:
+  prerelease:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-1.24-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-1.24-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Run tests
+      run: go test -v -race ./...
+
+    - name: Run linter
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        args: --timeout=5m
+
+    - name: Build
+      run: go build -v ./...
+
+    - name: Get latest version
+      id: get_version
+      run: |
+        # Get the latest tag, or use v0.0.0 if no tags exist
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+
+        # Remove 'v' prefix if present
+        CURRENT_VERSION=${LATEST_TAG#v}
+
+        # Split version into parts
+        IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+        MAJOR=${VERSION_PARTS[0]:-0}
+        MINOR=${VERSION_PARTS[1]:-1}
+        PATCH=${VERSION_PARTS[2]:-0}
+
+        # For pre-release, increment minor version
+        MINOR=$((MINOR + 1))
+        PATCH=0
+
+        BASE_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+        echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
+        echo "Base version: $BASE_VERSION"
+
+    - name: Determine pre-release version
+      id: prerelease_version
+      run: |
+        BASE_VERSION="${{ steps.get_version.outputs.base_version }}"
+        PRERELEASE_TYPE="${{ github.event.inputs.prerelease_type || 'beta' }}"
+        TIMESTAMP=$(date +%Y%m%d%H%M%S)
+        SHORT_SHA=$(git rev-parse --short HEAD)
+
+        # Create pre-release version
+        PRERELEASE_VERSION="v${BASE_VERSION}-${PRERELEASE_TYPE}.${TIMESTAMP}.${SHORT_SHA}"
+
+        echo "prerelease_version=$PRERELEASE_VERSION" >> $GITHUB_OUTPUT
+        echo "prerelease_type=$PRERELEASE_TYPE" >> $GITHUB_OUTPUT
+        echo "Pre-release version: $PRERELEASE_VERSION"
+
+    - name: Generate pre-release notes
+      id: release_notes
+      run: |
+        PRERELEASE_VERSION="${{ steps.prerelease_version.outputs.prerelease_version }}"
+        PRERELEASE_TYPE="${{ steps.prerelease_version.outputs.prerelease_type }}"
+
+        # Create release notes
+        cat > PRERELEASE_NOTES.md << EOF
+        ## $PRERELEASE_VERSION ($(date +%Y-%m-%d))
+
+        This is a **$PRERELEASE_TYPE** pre-release version for testing purposes.
+
+        ### ⚠️ Warning
+        This is a pre-release version and may contain bugs or incomplete features.
+        Do not use in production environments.
+
+        ### Recent Changes
+        EOF
+
+        # Get recent commits (last 10)
+        git log --pretty=format:"- %s (%h)" -10 >> PRERELEASE_NOTES.md
+
+        cat >> PRERELEASE_NOTES.md << EOF
+
+        ### Installation
+
+        \`\`\`bash
+        go get github.com/zentooo/logspan@$PRERELEASE_VERSION
+        \`\`\`
+
+        ### Feedback
+        Please report any issues or feedback in the [GitHub Issues](https://github.com/zentooo/logspan/issues).
+        EOF
+
+        # Read the release notes content
+        RELEASE_NOTES_CONTENT=$(cat PRERELEASE_NOTES.md)
+        echo "release_notes_content<<EOF" >> $GITHUB_OUTPUT
+        echo "$RELEASE_NOTES_CONTENT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create and push tag
+      run: |
+        PRERELEASE_VERSION="${{ steps.prerelease_version.outputs.prerelease_version }}"
+
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+        git tag -a $PRERELEASE_VERSION -m "Pre-release $PRERELEASE_VERSION"
+        git push origin $PRERELEASE_VERSION
+
+    - name: Create GitHub Pre-release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.prerelease_version.outputs.prerelease_version }}
+        release_name: Pre-release ${{ steps.prerelease_version.outputs.prerelease_version }}
+        body: ${{ steps.release_notes.outputs.release_notes_content }}
+        draft: false
+        prerelease: true
+
+    - name: Clean up
+      run: |
+        rm -f PRERELEASE_NOTES.md
