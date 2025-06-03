@@ -1,69 +1,93 @@
-# golangci-lint修正プランニング (更新版)
+# Goパッケージリリース準備タスク
 
-## 概要
-test系とexamplesをignoreする設定に変更後、golangci-lintを実行して14個の問題を特定しました。これらの問題を分類し、優先度を付けて修正していきます。
+## プロジェクト概要
+- **パッケージ名**: github.com/zentooo/logspan
+- **現在の状況**:
+  - 基本的な機能実装済み
+  - テストカバレッジ: 80.4%（pkg/logger）、100%（pkg/formatter、pkg/http_middleware）
+  - README.mdあり（日本語）
+  - CI/CD設定完了 ✅
 
-**進捗状況**: 14個中9個完了、残り5個
+## 全体的な進め方
+1. CI/CDパイプラインの構築（GitHub Actions）✅
+2. リリース管理の自動化
+3. ドキュメント整備
+4. パッケージ品質向上
+5. セキュリティ対策
 
-## 問題の分類と修正計画
+## タスクリスト
 
-### 1. errcheck (4件) - 高優先度 ✅ 完了
-エラーハンドリングが不適切な箇所（本体コードのみ）
-- [x] 1.1 pkg/logger/context_logger.go:105 - fmt.Fprintf のエラーチェック
-- [x] 1.2 pkg/logger/context_logger.go:109 - fmt.Fprintf のエラーチェック
-- [x] 1.3 pkg/logger/direct_logger.go:96 - fmt.Fprintf のエラーチェック
-- [x] 1.4 pkg/logger/direct_logger.go:100 - fmt.Fprintf のエラーチェック
+### 1. CI/CDパイプライン構築 ✅
+- [x] 1-1. GitHub Actionsワークフロー設定ディレクトリ作成
+- [x] 1-2. テスト実行ワークフロー作成（複数Goバージョン対応）
+- [x] 1-3. リンター設定（golangci-lint）
+- [x] 1-4. テストカバレッジレポート設定
+- [x] 1-5. セキュリティスキャン設定（gosec）
+- [x] 1-6. 依存関係脆弱性チェック設定
 
-### 2. unused (2件) - 高優先度 ✅ 完了
-未使用の関数（デッドコード）
-- [x] 2.1 pkg/logger/password_masking_middleware.go:106 - maskPasswordsInFields 関数削除
-- [x] 2.2 pkg/logger/password_masking_middleware.go:129 - maskPasswordsInGenericMap 関数削除
+### 2. リリース管理自動化
+- [ ] 2-1. セマンティックバージョニング設定
+- [ ] 2-2. 自動リリースワークフロー作成
+- [ ] 2-3. CHANGELOG.md自動生成設定
+- [ ] 2-4. リリースノート自動生成設定
+- [ ] 2-5. タグベースリリース設定
 
-### 3. goconst (5件) - 中優先度 ✅ 完了
-定数化すべき文字列リテラル
-- [x] 3.1 pkg/logger/level.go:23 - "DEBUG" を定数化
-- [x] 3.2 pkg/logger/level.go:25 - "INFO" を定数化
-- [x] 3.3 pkg/logger/level.go:27 - "WARN" を定数化
-- [x] 3.4 pkg/logger/level.go:29 - "ERROR" を定数化
-- [x] 3.5 pkg/logger/level.go:31 - "CRITICAL" を定数化
+### 3. ドキュメント整備
+- [ ] 3-1. 英語版README.md作成
+- [ ] 3-2. API仕様書作成（godoc対応）
+- [ ] 3-3. CONTRIBUTING.md作成
+- [ ] 3-4. LICENSE.md作成
+- [ ] 3-5. CODE_OF_CONDUCT.md作成
+- [ ] 3-6. 使用例の充実化
 
-### 4. その他 (3件) - 低優先度 🔄 進行中
-- [ ] 4.1 gochecknoinits: pkg/logger/logger.go:34 - init関数の使用見直し
-- [ ] 4.2 gocritic: pkg/logger/password_masking_middleware.go:109 - strings.EqualFold の使用
-- [ ] 4.3 goprintffuncname: pkg/logger/direct_logger.go:71 - printf関数の命名 (log → logf)
+### 4. パッケージ品質向上
+- [ ] 4-1. go.modの依存関係最適化
+- [ ] 4-2. テストカバレッジ向上（目標90%以上）
+- [ ] 4-3. ベンチマークテスト追加
+- [ ] 4-4. パフォーマンステスト追加
+- [ ] 4-5. エラーハンドリング改善
 
-### 5. staticcheck (2件) - 低優先度 🔄 進行中
-- [ ] 5.1 pkg/logger/context_logger.go:105 - 空のブランチ (SA9003)
-- [ ] 5.2 pkg/logger/direct_logger.go:96 - 空のブランチ (SA9003)
+### 5. セキュリティ対策
+- [ ] 5-1. セキュリティポリシー作成
+- [ ] 5-2. 脆弱性報告プロセス設定
+- [ ] 5-3. 依存関係の定期更新設定
+- [ ] 5-4. セキュリティバッジ追加
 
-## 実行方針
-1. ✅ 高優先度の問題から順番に修正 → **完了**
-2. ✅ 中優先度の問題を修正 → **完了**
-3. 🔄 低優先度の問題を修正 → **進行中**
-4. 各修正後にテストを実行して動作確認
-5. 修正完了後に再度golangci-lintを実行して確認
+### 6. 公開準備
+- [ ] 6-1. pkg.go.dev対応確認
+- [ ] 6-2. Go Modules Proxy対応確認
+- [ ] 6-3. バージョン1.0.0リリース準備
+- [ ] 6-4. リリースアナウンス準備
 
-## 修正の影響範囲
-- **errcheck**: ログ出力時のエラーハンドリング改善 ✅ 完了
-- **unused**: デッドコード削除によるコード品質向上 ✅ 完了
-- **goconst**: ログレベル文字列の定数化による保守性向上 ✅ 完了
-- **その他**: コードスタイルと命名規則の改善 🔄 進行中
+## 優先度
+1. **高**: ~~CI/CDパイプライン構築（1-1〜1-6）~~ ✅ **完了**
+2. **高**: 英語版README作成（3-1）
+3. **中**: リリース管理自動化（2-1〜2-5）
+4. **中**: ドキュメント整備（3-2〜3-6）
+5. **低**: パッケージ品質向上（4-1〜4-5）
+6. **低**: セキュリティ対策（5-1〜5-4）
 
-## 修正完了状況
-- ✅ **errcheck (4件)**: fmt.Fprintfのエラーハンドリングを適切に追加。フォールバック処理では意図的にエラーを無視するコメントを追加。
-- ✅ **unused (2件)**: 未使用の関数maskPasswordsInFieldsとmaskPasswordsInGenericMapを削除。
-- ✅ **goconst (5件)**: ログレベル文字列を定数として定義し、String()メソッドとParseLogLevel()関数で使用するように修正。
+## 完了したタスク詳細
 
-## 残り問題
-現在5個の問題が残っています：
-- gochecknoinits: 1件
-- gocritic: 1件
-- goprintffuncname: 1件
-- staticcheck: 2件（空のブランチ）
+### 1. CI/CDパイプライン構築 ✅
+以下のワークフローファイルを作成しました：
+
+- **`.github/workflows/ci.yml`**: 統合CI/CDパイプライン
+  - Go 1.21, 1.22, 1.23での並列テスト実行
+  - テストカバレッジレポート（Codecov連携）
+  - golangci-lintによるコード品質チェック
+  - gosecによるセキュリティスキャン
+  - ビルド検証
+
+- **`.github/workflows/test.yml`**: 専用テストワークフロー
+- **`.github/workflows/lint.yml`**: 専用リンターワークフロー
+- **`.github/workflows/security.yml`**: 専用セキュリティスキャンワークフロー
+
+- **`.golangci.yml`**: golangci-lint設定ファイル
+  - 包括的なリンタールール設定
+  - テストファイル用の例外設定
+
+- **go.mod修正**: Goバージョンを1.23に統一
 
 ## 次のステップ
-低優先度の残り5件の問題を修正：
-1. staticcheck問題（空のブランチ）の修正
-2. gocritic問題（strings.EqualFold使用）の修正
-3. goprintffuncname問題（関数名修正）の修正
-4. gochecknoinits問題（init関数見直し）の修正
+次は高優先度の英語版README作成（タスク3-1）に進む予定です。

@@ -102,11 +102,7 @@ func (l *ContextLogger) flushInternal() {
 	jsonData, err := formatLogOutput(l.entries, l.fields, l.startTime, endTime, l.formatter)
 	if err != nil {
 		// Fallback to simple output if formatting fails
-		if _, writeErr := fmt.Fprintf(l.output, "Error formatting log: %v\n", err); writeErr != nil {
-			// If we can't even write the error message, there's not much we can do
-			// This is a best-effort attempt to log the error
-			// We intentionally ignore this error as it's a fallback scenario
-		}
+		_, _ = fmt.Fprintf(l.output, "Error formatting log: %v\n", err)
 		return
 	}
 

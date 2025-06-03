@@ -104,9 +104,8 @@ func (pmm *PasswordMaskingMiddleware) maskPasswordsInMessage(message string) str
 
 // isPasswordKey checks if a key is considered a password field (case-insensitive)
 func (pmm *PasswordMaskingMiddleware) isPasswordKey(key string) bool {
-	lowerKey := strings.ToLower(key)
 	for _, passwordKey := range pmm.PasswordKeys {
-		if strings.ToLower(passwordKey) == lowerKey {
+		if strings.EqualFold(passwordKey, key) {
 			return true
 		}
 	}

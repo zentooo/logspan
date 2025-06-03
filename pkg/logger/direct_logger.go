@@ -67,8 +67,8 @@ func (l *DirectLogger) isLevelEnabled(level LogLevel) bool {
 	return level >= l.minLevel
 }
 
-// log writes a log entry with the given level and message in structured format
-func (l *DirectLogger) log(level LogLevel, format string, args ...interface{}) {
+// logf writes a log entry with the given level and message in structured format
+func (l *DirectLogger) logf(level LogLevel, format string, args ...interface{}) {
 	if !l.isLevelEnabled(level) {
 		return
 	}
@@ -93,11 +93,7 @@ func (l *DirectLogger) log(level LogLevel, format string, args ...interface{}) {
 		// Use the formatter (default or explicitly set)
 		jsonData, err := formatLogOutput([]*LogEntry{processedEntry}, make(map[string]interface{}), processedEntry.Timestamp, processedEntry.Timestamp, l.formatter)
 		if err != nil {
-			if _, writeErr := fmt.Fprintf(l.output, "Error formatting log: %v\n", err); writeErr != nil {
-				// If we can't even write the error message, there's not much we can do
-				// This is a best-effort attempt to log the error
-				// We intentionally ignore this error as it's a fallback scenario
-			}
+			_, _ = fmt.Fprintf(l.output, "Error formatting log: %v\n", err)
 			return
 		}
 
@@ -112,25 +108,25 @@ func (l *DirectLogger) log(level LogLevel, format string, args ...interface{}) {
 
 // Debugf logs a debug message
 func (l *DirectLogger) Debugf(format string, args ...interface{}) {
-	l.log(DebugLevel, format, args...)
+	l.logf(DebugLevel, format, args...)
 }
 
 // Infof logs an info message
 func (l *DirectLogger) Infof(format string, args ...interface{}) {
-	l.log(InfoLevel, format, args...)
+	l.logf(InfoLevel, format, args...)
 }
 
 // Warnf logs a warning message
 func (l *DirectLogger) Warnf(format string, args ...interface{}) {
-	l.log(WarnLevel, format, args...)
+	l.logf(WarnLevel, format, args...)
 }
 
 // Errorf logs an error message
 func (l *DirectLogger) Errorf(format string, args ...interface{}) {
-	l.log(ErrorLevel, format, args...)
+	l.logf(ErrorLevel, format, args...)
 }
 
 // Criticalf logs a critical message
 func (l *DirectLogger) Criticalf(format string, args ...interface{}) {
-	l.log(CriticalLevel, format, args...)
+	l.logf(CriticalLevel, format, args...)
 }
