@@ -155,4 +155,4 @@
 //   - pkg/logger: Core logging functionality
 //   - pkg/formatter: Output formatting
 //   - pkg/http_middleware: HTTP integration
-package main
+package logspan
