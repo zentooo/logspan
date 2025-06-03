@@ -205,3 +205,178 @@ func TestIsHigherSeverity(t *testing.T) {
 		}
 	}
 }
+
+func TestContextLogger_AutoFlushOnMaxEntries(t *testing.T) {
+	// Save original config
+	originalConfig := GetConfig()
+	defer func() {
+		Init(originalConfig)
+	}()
+
+	// Set up config with small max entries for testing
+	testConfig := DefaultConfig()
+	testConfig.MaxLogEntries = 3
+	Init(testConfig)
+
+	var buf bytes.Buffer
+	logger := NewContextLogger()
+	logger.SetOutput(&buf)
+
+	// Add context field
+	logger.AddContextValue("test_id", "auto_flush_test")
+
+	// Add entries up to the limit - should not flush yet
+	logger.Infof("Message 1")
+	logger.Infof("Message 2")
+
+	// Buffer should be empty (no auto-flush yet)
+	if buf.Len() > 0 {
+		t.Error("Expected no output before reaching max entries")
+	}
+
+	// Add third entry - should trigger auto-flush
+	logger.Infof("Message 3")
+
+	// Buffer should now contain the flushed output
+	output := buf.String()
+	if len(output) == 0 {
+		t.Error("Expected output after reaching max entries")
+	}
+
+	// Verify all three messages are in the output
+	if !strings.Contains(output, "Message 1") {
+		t.Error("Expected 'Message 1' in auto-flushed output")
+	}
+	if !strings.Contains(output, "Message 2") {
+		t.Error("Expected 'Message 2' in auto-flushed output")
+	}
+	if !strings.Contains(output, "Message 3") {
+		t.Error("Expected 'Message 3' in auto-flushed output")
+	}
+
+	// Verify context field is included
+	if !strings.Contains(output, "test_id") {
+		t.Error("Expected context field in auto-flushed output")
+	}
+
+	// Reset buffer and add more entries to test that logger continues working
+	buf.Reset()
+	logger.Infof("Message 4")
+	logger.Infof("Message 5")
+
+	// Should not flush yet
+	if buf.Len() > 0 {
+		t.Error("Expected no output before reaching max entries again")
+	}
+
+	// Add third entry to trigger another auto-flush
+	logger.Infof("Message 6")
+
+	// Should have new output
+	output2 := buf.String()
+	if len(output2) == 0 {
+		t.Error("Expected output after reaching max entries again")
+	}
+
+	// Verify new messages are in the second output
+	if !strings.Contains(output2, "Message 4") {
+		t.Error("Expected 'Message 4' in second auto-flushed output")
+	}
+	if !strings.Contains(output2, "Message 6") {
+		t.Error("Expected 'Message 6' in second auto-flushed output")
+	}
+}
+
+func TestContextLogger_NoAutoFlushWhenMaxEntriesZero(t *testing.T) {
+	// Save original config
+	originalConfig := GetConfig()
+	defer func() {
+		Init(originalConfig)
+	}()
+
+	// Set up config with MaxLogEntries = 0 (no limit)
+	testConfig := DefaultConfig()
+	testConfig.MaxLogEntries = 0
+	Init(testConfig)
+
+	var buf bytes.Buffer
+	logger := NewContextLogger()
+	logger.SetOutput(&buf)
+
+	// Add many entries - should not auto-flush
+	for i := 0; i < 10; i++ {
+		logger.Infof("Message %d", i+1)
+	}
+
+	// Buffer should be empty (no auto-flush)
+	if buf.Len() > 0 {
+		t.Error("Expected no auto-flush when MaxLogEntries is 0")
+	}
+
+	// Manual flush should work
+	logger.Flush()
+	output := buf.String()
+	if len(output) == 0 {
+		t.Error("Expected output after manual flush")
+	}
+
+	// Verify all messages are in the output
+	if !strings.Contains(output, "Message 1") {
+		t.Error("Expected 'Message 1' in manually flushed output")
+	}
+	if !strings.Contains(output, "Message 10") {
+		t.Error("Expected 'Message 10' in manually flushed output")
+	}
+}
+
+func TestContextLogger_AutoFlushWithLevelFiltering(t *testing.T) {
+	// Save original config
+	originalConfig := GetConfig()
+	defer func() {
+		Init(originalConfig)
+	}()
+
+	// Set up config with small max entries for testing
+	testConfig := DefaultConfig()
+	testConfig.MaxLogEntries = 2
+	Init(testConfig)
+
+	var buf bytes.Buffer
+	logger := NewContextLogger()
+	logger.SetOutput(&buf)
+	logger.SetLevel(WarnLevel) // Only WARN and above
+
+	// Add entries that will be filtered out - should not count toward limit
+	logger.Debugf("Debug message 1")
+	logger.Infof("Info message 1")
+	logger.Debugf("Debug message 2")
+
+	// Buffer should be empty (no entries added due to filtering)
+	if buf.Len() > 0 {
+		t.Error("Expected no output when all entries are filtered")
+	}
+
+	// Add entries that pass the filter
+	logger.Warnf("Warning message 1")
+	logger.Errorf("Error message 1")
+
+	// Should trigger auto-flush (2 entries that passed filter)
+	output := buf.String()
+	if len(output) == 0 {
+		t.Error("Expected output after reaching max entries with filtering")
+	}
+
+	// Verify only the non-filtered messages are in the output
+	if strings.Contains(output, "Debug message") {
+		t.Error("Debug messages should be filtered out")
+	}
+	if strings.Contains(output, "Info message") {
+		t.Error("Info messages should be filtered out")
+	}
+	if !strings.Contains(output, "Warning message 1") {
+		t.Error("Expected 'Warning message 1' in output")
+	}
+	if !strings.Contains(output, "Error message 1") {
+		t.Error("Expected 'Error message 1' in output")
+	}
+}

@@ -12,13 +12,14 @@ import (
 
 // ContextLogger implements context-based logging with log aggregation
 type ContextLogger struct {
-	entries   []*LogEntry
-	fields    map[string]interface{}
-	startTime time.Time
-	output    io.Writer
-	minLevel  LogLevel
-	formatter formatter.Formatter
-	mu        sync.Mutex
+	entries    []*LogEntry
+	fields     map[string]interface{}
+	startTime  time.Time
+	output     io.Writer
+	minLevel   LogLevel
+	formatter  formatter.Formatter
+	maxEntries int // Maximum number of entries before auto-flush
+	mu         sync.Mutex
 }
 
 // NewContextLogger creates a new ContextLogger instance
@@ -33,12 +34,13 @@ func NewContextLogger() *ContextLogger {
 	}
 
 	return &ContextLogger{
-		entries:   make([]*LogEntry, 0),
-		fields:    make(map[string]interface{}),
-		startTime: time.Now(),
-		output:    os.Stdout,
-		minLevel:  InfoLevel,
-		formatter: jsonFormatter,
+		entries:    make([]*LogEntry, 0),
+		fields:     make(map[string]interface{}),
+		startTime:  time.Now(),
+		output:     os.Stdout,
+		minLevel:   config.MinLevel,
+		formatter:  jsonFormatter,
+		maxEntries: config.MaxLogEntries,
 	}
 }
 
@@ -79,7 +81,43 @@ func (l *ContextLogger) addEntry(level LogLevel, message string) {
 	// Process through global middleware chain
 	processWithGlobalMiddleware(entry, func(processedEntry *LogEntry) {
 		l.entries = append(l.entries, processedEntry)
+
+		// Check if we need to auto-flush due to entry limit
+		if l.maxEntries > 0 && len(l.entries) >= l.maxEntries {
+			l.flushInternal()
+		}
 	})
+}
+
+// flushInternal performs the flush operation without acquiring the mutex
+// This method assumes the mutex is already held by the caller
+func (l *ContextLogger) flushInternal() {
+	if l.output == nil || len(l.entries) == 0 {
+		return
+	}
+
+	endTime := time.Now()
+
+	// Use the formatter (default or explicitly set)
+	jsonData, err := formatLogOutput(l.entries, l.fields, l.startTime, endTime, l.formatter)
+	if err != nil {
+		// Fallback to simple output if formatting fails
+		fmt.Fprintf(l.output, "Error formatting log: %v\n", err)
+		return
+	}
+
+	fmt.Fprintf(l.output, "%s\n", jsonData)
+
+	// Clear entries after flushing and reset start time
+	l.entries = l.entries[:0] // Clear slice but keep capacity
+	l.startTime = time.Now()  // Reset start time for next batch
+}
+
+// Flush outputs all accumulated log entries as a single JSON
+func (l *ContextLogger) Flush() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.flushInternal()
 }
 
 // AddContextValue adds a field to the context
@@ -103,28 +141,6 @@ func (l *ContextLogger) SetFormatter(f formatter.Formatter) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.formatter = f
-}
-
-// Flush outputs all accumulated log entries as a single JSON
-func (l *ContextLogger) Flush() {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if l.output == nil || len(l.entries) == 0 {
-		return
-	}
-
-	endTime := time.Now()
-
-	// Use the formatter (default or explicitly set)
-	jsonData, err := formatLogOutput(l.entries, l.fields, l.startTime, endTime, l.formatter)
-	if err != nil {
-		// Fallback to simple output if formatting fails
-		fmt.Fprintf(l.output, "Error formatting log: %v\n", err)
-		return
-	}
-
-	fmt.Fprintf(l.output, "%s\n", jsonData)
 }
 
 // Debugf logs a debug message

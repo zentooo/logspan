@@ -21,6 +21,10 @@ type Config struct {
 
 	// PrettifyJSON enables pretty-printing of JSON output with indentation
 	PrettifyJSON bool
+
+	// MaxLogEntries sets the maximum number of log entries to accumulate in ContextLogger
+	// before automatically flushing. 0 means no limit (default behavior)
+	MaxLogEntries int
 }
 
 // DefaultConfig returns a default configuration
@@ -30,6 +34,7 @@ func DefaultConfig() Config {
 		Output:           os.Stdout,
 		EnableSourceInfo: false,
 		PrettifyJSON:     false,
+		MaxLogEntries:    1000, // Default to 1000 entries before auto-flush
 	}
 }
 

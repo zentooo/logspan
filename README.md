@@ -358,6 +358,9 @@ type Config struct {
 
     // JSON出力の整形（インデント）を有効化
     PrettifyJSON bool
+
+    // コンテキストロガーの最大エントリ数（0 = 制限なし）
+    MaxLogEntries int
 }
 ```
 
@@ -369,6 +372,7 @@ config := logger.DefaultConfig()
 // Output: os.Stdout
 // EnableSourceInfo: false
 // PrettifyJSON: false
+// MaxLogEntries: 1000
 ```
 
 ### カスタム設定例
@@ -380,6 +384,7 @@ logger.Init(logger.Config{
     Output:           os.Stdout,
     EnableSourceInfo: true,
     PrettifyJSON:     true,  // 読みやすい整形されたJSON
+    MaxLogEntries:    500,   // 500エントリで自動フラッシュ
 })
 
 // 本番環境向け設定（コンパクトなJSON出力）
@@ -388,6 +393,22 @@ logger.Init(logger.Config{
     Output:           logFile,
     EnableSourceInfo: false,
     PrettifyJSON:     false,  // コンパクトなJSON
+    MaxLogEntries:    1000,   // 1000エントリで自動フラッシュ
+})
+
+// メモリ効率重視設定
+logger.Init(logger.Config{
+    MinLevel:      logger.InfoLevel,
+    Output:        logFile,
+    PrettifyJSON:  false,
+    MaxLogEntries: 100,  // 頻繁な自動フラッシュでメモリ使用量を抑制
+})
+
+// 制限なし設定（手動フラッシュのみ）
+logger.Init(logger.Config{
+    MinLevel:      logger.InfoLevel,
+    Output:        logFile,
+    MaxLogEntries: 0,  // 自動フラッシュを無効化
 })
 ```
 
@@ -399,7 +420,86 @@ if logger.IsInitialized() {
     config := logger.GetConfig()
     fmt.Printf("Current log level: %s\n", config.MinLevel.String())
     fmt.Printf("Pretty JSON enabled: %t\n", config.PrettifyJSON)
+    fmt.Printf("Max log entries: %d\n", config.MaxLogEntries)
 }
+```
+
+## 🚀 メモリ最適化
+
+### 自動フラッシュ機能
+
+LogSpanは、メモリ使用量を制御するための自動フラッシュ機能を提供します：
+
+#### 基本的な動作
+
+```go
+// 自動フラッシュの設定
+logger.Init(logger.Config{
+    MaxLogEntries: 100, // 100エントリで自動フラッシュ
+})
+
+ctx := context.Background()
+contextLogger := logger.NewContextLogger()
+ctx = logger.WithLogger(ctx, contextLogger)
+
+logger.AddContextValue(ctx, "request_id", "req-123")
+
+// 100エントリに達すると自動的にフラッシュされる
+for i := 0; i < 250; i++ {
+    logger.Infof(ctx, "Processing item %d", i)
+}
+// 結果: 2回の自動フラッシュ（100エントリ、200エントリ時点）
+// 残り50エントリは手動フラッシュが必要
+
+logger.FlushContext(ctx) // 残りのエントリを出力
+```
+
+#### 自動フラッシュの特徴
+
+- **エントリカウント**: ログレベルフィルターを通過したエントリのみがカウントされます
+- **バッチ処理**: 各自動フラッシュは独立したログバッチとして出力されます
+- **コンテキスト保持**: コンテキストフィールドは自動フラッシュ後も保持されます
+- **メモリ解放**: フラッシュ後、エントリは自動的にクリアされてメモリが解放されます
+
+#### メモリ効率的な使用例
+
+```go
+// 大量ログ処理での設定例
+logger.Init(logger.Config{
+    MinLevel:      logger.InfoLevel,
+    MaxLogEntries: 50,    // 小さなバッチサイズ
+    PrettifyJSON:  false, // コンパクト出力
+})
+
+ctx := context.Background()
+contextLogger := logger.NewContextLogger()
+ctx = logger.WithLogger(ctx, contextLogger)
+
+logger.AddContextValue(ctx, "batch_id", "batch-001")
+
+// 大量データの処理
+for i := 0; i < 10000; i++ {
+    logger.Infof(ctx, "Processing record %d", i)
+
+    if i%1000 == 0 {
+        // 進捗をコンテキストに追加
+        logger.AddContextValue(ctx, "progress", fmt.Sprintf("%d/10000", i))
+    }
+}
+// 自動フラッシュにより、メモリ使用量は一定に保たれる
+
+logger.FlushContext(ctx) // 最後の残りエントリを出力
+```
+
+#### 無効化オプション
+
+```go
+// 自動フラッシュを無効にする（従来の動作）
+logger.Init(logger.Config{
+    MaxLogEntries: 0, // 0 = 制限なし
+})
+
+// この場合、手動でFlushContext()を呼ぶまでエントリが蓄積される
 ```
 
 ## 📚 サンプルコード
@@ -412,6 +512,9 @@ go run examples/direct_logger/main.go
 
 # コンテキストロガーのサンプル
 go run examples/context_logger/main.go
+
+# 自動フラッシュ機能のサンプル
+go run examples/auto_flush/main.go
 
 # HTTPミドルウェアのサンプル
 go run examples/http_middleware_example.go

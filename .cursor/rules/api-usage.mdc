@@ -18,6 +18,7 @@ type Config struct {
     Output           io.Writer // Output destination
     EnableSourceInfo bool      // Enable source file information
     PrettifyJSON     bool      // Enable pretty-printed JSON output
+    MaxLogEntries    int       // Maximum log entries before auto-flush (0 = no limit)
 }
 
 // Default configuration
@@ -26,9 +27,10 @@ logger.Init(config)
 
 // Custom configuration
 logger.Init(logger.Config{
-    MinLevel:     logger.DebugLevel,
-    Output:       os.Stdout,
-    PrettifyJSON: true,
+    MinLevel:      logger.DebugLevel,
+    Output:        os.Stdout,
+    PrettifyJSON:  true,
+    MaxLogEntries: 1000, // Auto-flush after 1000 entries
 })
 ```
 
@@ -72,6 +74,55 @@ directLogger := logger.NewDirectLogger()
 directLogger.SetLevel(logger.WarnLevel)
 directLogger.SetLevelFromString("ERROR")
 directLogger.SetOutput(logFile)
+```
+
+## Memory Optimization
+
+### Auto-Flush Configuration
+```go
+// Configure auto-flush behavior
+logger.Init(logger.Config{
+    MaxLogEntries: 500, // Auto-flush after 500 entries
+})
+
+// Disable auto-flush (unlimited entries until manual flush)
+logger.Init(logger.Config{
+    MaxLogEntries: 0, // 0 means no limit
+})
+```
+
+### Auto-Flush Behavior
+- **Context Logger**: Automatically flushes when the number of accumulated log entries reaches `MaxLogEntries`
+- **Entry Counting**: Only entries that pass the log level filter are counted toward the limit
+- **Batch Processing**: Each auto-flush creates a separate log batch with its own start/end time
+- **Context Preservation**: Context fields are preserved across auto-flush operations
+- **Memory Management**: Entries are cleared after each flush to free memory
+
+### Example: Memory-Efficient Logging
+```go
+// Configure for memory efficiency
+logger.Init(logger.Config{
+    MinLevel:      logger.InfoLevel,
+    MaxLogEntries: 100, // Small batch size for frequent flushing
+    PrettifyJSON:  false, // Compact output
+})
+
+ctx := context.Background()
+contextLogger := logger.NewContextLogger()
+ctx = logger.WithLogger(ctx, contextLogger)
+
+// Add context
+logger.AddContextValue(ctx, "request_id", "req-123")
+
+// Log entries - will auto-flush every 100 entries
+for i := 0; i < 250; i++ {
+    logger.Infof(ctx, "Processing item %d", i)
+}
+// This will result in 2 auto-flushes (at 100 and 200 entries)
+// Plus 50 remaining entries that need manual flush
+
+// Manual flush for remaining entries
+logger.FlushContext(ctx)
 ```
 
 ## Context Operations
