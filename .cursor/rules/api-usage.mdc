@@ -11,10 +11,37 @@ alwaysApply: true
 ```go
 // Initialize global logger settings
 logger.Init(config Config)
+
+// Config structure
+type Config struct {
+    MinLevel         LogLevel  // Minimum log level for filtering
+    Output           io.Writer // Output destination
+    EnableSourceInfo bool      // Enable source file information
+    PrettifyJSON     bool      // Enable pretty-printed JSON output
+}
+
+// Default configuration
+config := logger.DefaultConfig()
+logger.Init(config)
+
+// Custom configuration
+logger.Init(logger.Config{
+    MinLevel:     logger.DebugLevel,
+    Output:       os.Stdout,
+    PrettifyJSON: true,
+})
 ```
 
-### Context Logger
-The context logger is automatically set up through HTTP middleware or similar mechanisms. No explicit initialization is required.
+### Context Logger Setup
+```go
+// Create and attach context logger
+ctx := context.Background()
+contextLogger := logger.NewContextLogger()
+ctx = logger.WithLogger(ctx, contextLogger)
+
+// Retrieve logger from context
+contextLogger := logger.FromContext(ctx)
+```
 
 ## Logging Methods
 
@@ -26,21 +53,28 @@ logger.Debugf(ctx context.Context, format string, args ...interface{})
 logger.Warnf(ctx context.Context, format string, args ...interface{})
 logger.Errorf(ctx context.Context, format string, args ...interface{})
 logger.Criticalf(ctx context.Context, format string, args ...interface{})
+
+// Flush accumulated logs
+logger.FlushContext(ctx)
 ```
 
 ### Direct Logger
 ```go
-// Direct logging without context
+// Direct logging without context (global instance)
 logger.D.Infof(format string, args ...interface{})
 logger.D.Debugf(format string, args ...interface{})
 logger.D.Warnf(format string, args ...interface{})
 logger.D.Errorf(format string, args ...interface{})
 logger.D.Criticalf(format string, args ...interface{})
+
+// Create custom direct logger
+directLogger := logger.NewDirectLogger()
+directLogger.SetLevel(logger.WarnLevel)
+directLogger.SetLevelFromString("ERROR")
+directLogger.SetOutput(logFile)
 ```
 
 ## Context Operations
-
-(add key/value to "context" of log entry)
 
 ### Adding Context Fields
 ```go
@@ -49,6 +83,14 @@ logger.AddContextValue(ctx context.Context, key string, value interface{})
 
 // Add multiple fields
 logger.AddContextValues(ctx context.Context, fields map[string]interface{})
+
+// Direct logger context operations
+contextLogger := logger.FromContext(ctx)
+contextLogger.AddContextValue("key", "value")
+contextLogger.AddContextValues(map[string]interface{}{
+    "request_id": "req-123",
+    "user_id":    "user-456",
+})
 ```
 
 ## Middleware
@@ -57,8 +99,29 @@ logger.AddContextValues(ctx context.Context, fields map[string]interface{})
 ```go
 type Middleware func(entry *LogEntry, next func(*LogEntry))
 
-// Add middleware to the logging pipeline
+// Add middleware to the global pipeline
 logger.AddMiddleware(yourMiddleware)
+
+// Clear all middleware
+logger.ClearMiddleware()
+
+// Get middleware count
+count := logger.GetMiddlewareCount()
+```
+
+### Password Masking Middleware
+```go
+// Create password masking middleware with defaults
+passwordMasker := logger.NewPasswordMaskingMiddleware()
+logger.AddMiddleware(passwordMasker.Middleware())
+
+// Customize password masking
+passwordMasker := logger.NewPasswordMaskingMiddleware().
+    WithMaskString("[REDACTED]").
+    WithPasswordKeys([]string{"password", "secret", "token"}).
+    AddPasswordKey("api_key")
+
+logger.AddMiddleware(passwordMasker.Middleware())
 ```
 
 ## Formatter Configuration
@@ -71,9 +134,56 @@ directLogger.SetFormatter(formatter.NewDataDogFormatter())
 
 // For ContextLogger
 contextLogger := logger.NewContextLogger()
-contextLogger.SetFormatter(formatter.NewDataDogFormatter())
+contextLogger.SetFormatter(formatter.NewDataDogFormatterWithIndent("  "))
 ```
 
 ### Available Formatters
-- `formatter.NewJSONFormatter()` - Default JSON format
-- `formatter.NewDataDogFormatter()` - DataDog Standard Attributes format
+```go
+// JSON Formatters
+formatter.NewJSONFormatter()                    // Compact JSON
+formatter.NewJSONFormatterWithIndent("  ")     // Pretty-printed JSON
+
+// DataDog Formatters
+formatter.NewDataDogFormatter()                 // Compact DataDog format
+formatter.NewDataDogFormatterWithIndent("  ")  // Pretty-printed DataDog format
+```
+
+## HTTP Middleware
+
+### Setting up HTTP Logging
+```go
+import "github.com/zentooo/logspan/pkg/http_middleware"
+
+// Apply logging middleware to HTTP handler
+handler := http_middleware.LoggingMiddleware(yourHandler)
+
+// Automatic context setup with request information
+// - method, url, path, query, user_agent, remote_addr, host
+// - status_code, duration_ms (added after response)
+```
+
+## Log Levels
+
+### Available Levels
+```go
+logger.DebugLevel    // Detailed debugging information
+logger.InfoLevel     // General informational messages
+logger.WarnLevel     // Warning messages
+logger.ErrorLevel    // Error messages
+logger.CriticalLevel // Critical error messages
+
+// Parse from string
+level := logger.ParseLogLevel("INFO")
+levelString := logger.InfoLevel.String() // "INFO"
+```
+
+## Configuration Management
+
+### Global Configuration Access
+```go
+// Check if logger is initialized
+if logger.IsInitialized() {
+    config := logger.GetConfig()
+    // Use config...
+}
+```

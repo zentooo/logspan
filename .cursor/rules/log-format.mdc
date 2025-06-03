@@ -5,7 +5,7 @@ alwaysApply: true
 ---
 # Log Format Guide
 
-## Default JSON Format (logone-go compliant)
+## Default JSON Format
 
 The default log output follows this structure:
 
@@ -13,20 +13,54 @@ The default log output follows this structure:
 {
   "type": "request",
   "context": {
-    "REQUEST_ID": "xxxxxxx"
+    "request_id": "req-12345",
+    "user_id": "user-67890"
   },
   "runtime": {
-    "severity": "INFO", // max severity level in lines.severity
+    "severity": "INFO",
     "startTime": "2023-10-27T09:59:58.123456+09:00",
     "endTime": "2023-10-27T10:00:00.223456+09:00",
     "elapsed": 150,
     "lines": [
       {
-        "severity": "DEBUG",
-        "message": "invoked",
-        "time": "2023-10-27T09:59:59.123456+09:00",
-        "fileline": 19,
-        "funcname": "main.main"
+        "timestamp": "2023-10-27T09:59:59.123456+09:00",
+        "level": "INFO",
+        "message": "Request processing started"
+      },
+      {
+        "timestamp": "2023-10-27T09:59:59.223456+09:00",
+        "level": "DEBUG",
+        "message": "Validating input parameters"
+      }
+    ]
+  },
+  "config": {
+    "elapsedUnit": "ms"
+  }
+}
+```
+
+## Pretty-Printed JSON Format
+
+When `PrettifyJSON` is enabled in the configuration:
+
+```json
+{
+  "type": "request",
+  "context": {
+    "request_id": "req-12345",
+    "user_id": "user-67890"
+  },
+  "runtime": {
+    "severity": "INFO",
+    "startTime": "2023-10-27T09:59:58.123456+09:00",
+    "endTime": "2023-10-27T10:00:00.223456+09:00",
+    "elapsed": 150,
+    "lines": [
+      {
+        "timestamp": "2023-10-27T09:59:59.123456+09:00",
+        "level": "INFO",
+        "message": "Request processing started"
       }
     ]
   },
@@ -39,28 +73,117 @@ The default log output follows this structure:
 ## Key Fields
 
 ### Top Level
-- `type`: Log type (e.g., "request")
-- `context`: Common context information for the entire request
-- `runtime`: Runtime information for the request/processing unit
+- `type`: Log type (always "request")
+- `context`: Common context information for the entire request/processing unit
+- `runtime`: Runtime information and log entries
 - `config`: Logger configuration
 
 ### Runtime Section
-- `severity`: Highest log level in this context
-- `startTime`: Processing start time (ISO8601)
-- `endTime`: Processing end time (ISO8601)
-- `elapsed`: Processing duration
+- `severity`: Highest log level among all entries in this context
+- `startTime`: Processing start time (RFC3339Nano format)
+- `endTime`: Processing end time (RFC3339Nano format)
+- `elapsed`: Processing duration in milliseconds
 - `lines`: Array of individual log entries
 
 ### Log Entry (in lines array)
-- `severity`: Log level
+- `timestamp`: Entry timestamp (RFC3339Nano format)
+- `level`: Log level (DEBUG, INFO, WARN, ERROR, CRITICAL)
 - `message`: Log message
-- `time`: Timestamp (ISO8601)
-- `fileline`: Source code line number
-- `funcname`: Function name
 
-## DataDog Standard Attributes
+## DataDog Standard Attributes Format
 
-When DataDog Standard Attributes are enabled, the log format changes to use standard field names like:
-- `timestamp`
-- `status`
-- `message`
+When using DataDog formatter, the output structure changes to comply with DataDog Standard Attributes:
+
+```json
+{
+  "timestamp": "2023-10-27T09:59:58.123456+09:00",
+  "status": "info",
+  "message": "Log context with multiple entries",
+  "logger": "logspan",
+  "duration": 150,
+  "request_id": "req-12345",
+  "user_id": "user-67890",
+  "lines": [
+    {
+      "timestamp": "2023-10-27T09:59:59.123456+09:00",
+      "status": "info",
+      "message": "Request processing started",
+      "logger": "logspan"
+    },
+    {
+      "timestamp": "2023-10-27T09:59:59.223456+09:00",
+      "status": "debug",
+      "message": "Validating input parameters",
+      "logger": "logspan"
+    }
+  ]
+}
+```
+
+### DataDog Standard Fields
+- `timestamp`: Entry timestamp (ISO8601 format)
+- `status`: Log level in lowercase (debug, info, warn, error, critical)
+- `message`: Summary message or single entry message
+- `logger`: Always "logspan"
+- `duration`: Processing duration in milliseconds
+- `lines`: Array of individual log entries (when multiple entries exist)
+
+### Custom Attributes
+All context fields are included as custom attributes at the top level:
+- `request_id`, `user_id`, `session_id`, etc.
+
+## Direct Logger Format
+
+Direct logger outputs single entries immediately:
+
+### JSON Format
+```json
+{
+  "type": "request",
+  "context": {},
+  "runtime": {
+    "severity": "INFO",
+    "startTime": "2023-10-27T09:59:58.123456+09:00",
+    "endTime": "2023-10-27T09:59:58.123456+09:00",
+    "elapsed": 0,
+    "lines": [
+      {
+        "timestamp": "2023-10-27T09:59:58.123456+09:00",
+        "level": "INFO",
+        "message": "Direct log message"
+      }
+    ]
+  },
+  "config": {
+    "elapsedUnit": "ms"
+  }
+}
+```
+
+### DataDog Format
+```json
+{
+  "timestamp": "2023-10-27T09:59:58.123456+09:00",
+  "status": "info",
+  "message": "Direct log message",
+  "logger": "logspan",
+  "duration": 0
+}
+```
+
+## Password Masking
+
+When password masking middleware is enabled, sensitive information is automatically masked:
+
+```json
+{
+  "timestamp": "2023-10-27T09:59:58.123456+09:00",
+  "level": "INFO",
+  "message": "User login with password=*** and token=***"
+}
+```
+
+### Masked Patterns
+- `password=value` → `password=***`
+- `"password":"value"` → `"password":"***"`
+- Default masked keys: password, passwd, pwd, pass, secret, token, key, auth, credential, api_key, access_token, refresh_token

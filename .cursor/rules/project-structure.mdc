@@ -10,30 +10,83 @@ This project is a Go logging library that provides both context-based and direct
 ## Main Components
 
 ### Core Logger Package
-The main package is located in the `logger/` directory and contains the following key files:
+The main package is located in the `pkg/logger/` directory and contains the following key files:
 
-- [logger.go](mdc:logger/logger.go) - Core logger interface and main API functions
-- [context_logger.go](mdc:logger/context_logger.go) - Context-based logger implementation
-- [direct_logger.go](mdc:logger/direct_logger.go) - Direct logging implementation
-- [config.go](mdc:logger/config.go) - Configuration and initialization
-- [entry.go](mdc:logger/entry.go) - Log entry structure definitions
-- [middleware.go](mdc:logger/middleware.go) - Middleware interface and processing framework
-- [fields.go](mdc:logger/fields.go) - Common field keys and DataDog Standard Attributes
-- [context.go](mdc:logger/context.go) - Context helper functions
+- [logger.go](mdc:pkg/logger/logger.go) - Core logger interface and main API functions
+- [context_logger.go](mdc:pkg/logger/context_logger.go) - Context-based logger implementation
+- [direct_logger.go](mdc:pkg/logger/direct_logger.go) - Direct logging implementation
+- [config.go](mdc:pkg/logger/config.go) - Configuration and initialization
+- [entry.go](mdc:pkg/logger/entry.go) - Log entry structure definitions
+- [middleware.go](mdc:pkg/logger/middleware.go) - Middleware interface and processing framework
+- [context.go](mdc:pkg/logger/context.go) - Context helper functions
+- [level.go](mdc:pkg/logger/level.go) - Log level definitions and utilities
+- [password_masking_middleware.go](mdc:pkg/logger/password_masking_middleware.go) - Password masking middleware implementation
 
 ### Formatters
-The `formatter/` directory contains different output format implementations:
-- [interface.go](mdc:logger/formatter/interface.go) - Formatter interface
-- [json_formatter.go](mdc:logger/formatter/json_formatter.go) - Standard JSON formatter
-- [datadog_formatter.go](mdc:logger/formatter/datadog_formatter.go) - DataDog-compliant formatter
+The `pkg/formatter/` directory contains different output format implementations:
+- [interface.go](mdc:pkg/formatter/interface.go) - Formatter interface
+- [json_formatter.go](mdc:pkg/formatter/json_formatter.go) - Standard JSON formatter with optional indentation
+- [datadog_formatter.go](mdc:pkg/formatter/datadog_formatter.go) - DataDog Standard Attributes formatter
 
 ### HTTP Middleware
-Optional HTTP server middleware implementations are in the `http_middleware/` directory:
-- [middleware.go](mdc:logger/http_middleware/middleware.go)
+Optional HTTP server middleware implementations are in the `pkg/http_middleware/` directory:
+- [middleware.go](mdc:pkg/http_middleware/middleware.go) - HTTP request logging middleware
+
+### Examples
+The `examples/` directory contains usage examples:
+- [context_logger/](mdc:examples/context_logger/) - Context logger usage examples
+- [direct_logger/](mdc:examples/direct_logger/) - Direct logger usage examples
+- [datadog_formatter/](mdc:examples/datadog_formatter/) - DataDog formatter examples
+- [http_middleware_example.go](mdc:examples/http_middleware_example.go) - HTTP middleware usage
+
+### Test Files
+Comprehensive test coverage with the following test files:
+- [context_logger_test.go](mdc:pkg/logger/context_logger_test.go) - Context logger tests
+- [direct_logger_test.go](mdc:pkg/logger/direct_logger_test.go) - Direct logger tests
+- [middleware_test.go](mdc:pkg/logger/middleware_test.go) - Middleware framework tests
+- [password_masking_middleware_test.go](mdc:pkg/logger/password_masking_middleware_test.go) - Password masking tests
+- [json_formatter_test.go](mdc:pkg/formatter/json_formatter_test.go) - JSON formatter tests
+- [datadog_formatter_test.go](mdc:pkg/formatter/datadog_formatter_test.go) - DataDog formatter tests
+- [middleware_test.go](mdc:pkg/http_middleware/middleware_test.go) - HTTP middleware tests
 
 ## Key Features
-- Dual-mode logging (context-based and direct)
-- Transparent context management
-- Simple API interface
-- Extensibility through middleware
-- DataDog Standard Attributes support
+- **Dual-mode logging**: Context-based aggregation and direct immediate output
+- **Transparent context management**: Automatic context propagation through HTTP middleware
+- **Simple API interface**: Intuitive and easy-to-use logging methods
+- **Extensibility through middleware**: Pluggable middleware system for log processing
+- **Password masking**: Built-in sensitive information protection
+- **DataDog Standard Attributes support**: Native DataDog integration
+- **Pretty-printing**: Optional JSON indentation for development
+- **HTTP integration**: Automatic request logging and context setup
+- **Thread-safe**: Goroutine-safe implementation
+- **Configurable**: Flexible configuration options
+
+## Architecture
+
+### Package Structure
+```
+pkg/
+├── logger/                          # Core logging functionality
+│   ├── logger.go                   # Main API and global functions
+│   ├── context_logger.go           # Context-based logger
+│   ├── direct_logger.go            # Direct logger
+│   ├── config.go                   # Configuration management
+│   ├── entry.go                    # Log entry structure
+│   ├── middleware.go               # Middleware framework
+│   ├── context.go                  # Context utilities
+│   ├── level.go                    # Log level definitions
+│   └── password_masking_middleware.go # Password masking
+├── formatter/                       # Output formatters
+│   ├── interface.go                # Formatter interface
+│   ├── json_formatter.go           # JSON output
+│   └── datadog_formatter.go        # DataDog format
+└── http_middleware/                 # HTTP integration
+    └── middleware.go               # HTTP middleware
+```
+
+### Design Principles
+1. **Simplicity**: Clean and intuitive API design
+2. **Flexibility**: Support for various use cases and output formats
+3. **Extensibility**: Middleware-based architecture for customization
+4. **Performance**: Efficient log processing and minimal overhead
+5. **Safety**: Thread-safe operations and secure handling of sensitive data

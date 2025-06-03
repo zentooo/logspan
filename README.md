@@ -52,8 +52,8 @@ func main() {
     ctx = logger.WithLogger(ctx, contextLogger)
 
     // コンテキスト情報の追加
-    logger.AddField(ctx, "request_id", "req-12345")
-    logger.AddField(ctx, "user_id", "user-67890")
+    logger.AddContextValue(ctx, "request_id", "req-12345")
+    logger.AddContextValue(ctx, "user_id", "user-67890")
 
     // ログの記録
     logger.Infof(ctx, "リクエスト処理を開始")
@@ -65,7 +65,7 @@ func main() {
 }
 
 func processRequest(ctx context.Context) {
-    logger.AddField(ctx, "step", "validation")
+    logger.AddContextValue(ctx, "step", "validation")
     logger.Debugf(ctx, "入力パラメータを検証中")
     logger.Infof(ctx, "入力検証が完了")
 }
@@ -124,6 +124,18 @@ logger.D.Criticalf("重大なエラー: %v", criticalErr)
 
 ### 3. コンテキスト操作
 
+#### コンテキストロガーの設定
+
+```go
+// コンテキストロガーの作成と設定
+ctx := context.Background()
+contextLogger := logger.NewContextLogger()
+ctx = logger.WithLogger(ctx, contextLogger)
+
+// または、コンテキストから自動取得（存在しない場合は新規作成）
+contextLogger := logger.FromContext(ctx)
+```
+
 #### コンテキストフィールドの追加
 
 ```go
@@ -136,6 +148,14 @@ logger.AddContextValues(ctx, map[string]interface{}{
     "request_id": "req-67890",
     "ip_address": "192.168.1.1",
     "user_agent": "Mozilla/5.0...",
+})
+
+// 直接ロガーインスタンスを使用
+contextLogger := logger.FromContext(ctx)
+contextLogger.AddContextValue("operation", "user_login")
+contextLogger.AddContextValues(map[string]interface{}{
+    "step": "validation",
+    "attempt": 1,
 })
 ```
 
@@ -177,7 +197,7 @@ func main() {
         logger.Infof(ctx, "ユーザー一覧を取得中")
 
         // 追加のコンテキスト情報
-        logger.AddField(ctx, "query_params", r.URL.Query())
+        logger.AddContextValue(ctx, "query_params", r.URL.Query())
 
         // 処理...
 
@@ -193,22 +213,59 @@ func main() {
 
 ログ処理パイプラインをカスタマイズできます：
 
+#### 基本的なミドルウェア
+
 ```go
-// パスワードマスキングミドルウェア
-func passwordMaskingMiddleware(entry *logger.LogEntry, next func(*logger.LogEntry)) {
-    // メッセージ内のパスワードをマスク
-    entry.Message = strings.ReplaceAll(entry.Message, "password=secret", "password=***")
+// カスタムミドルウェアの作成
+func customMiddleware(entry *logger.LogEntry, next func(*logger.LogEntry)) {
+    // ログエントリの前処理
+    entry.Message = "[CUSTOM] " + entry.Message
+
+    // 次のミドルウェアまたは最終処理を呼び出し
     next(entry)
 }
 
 // ミドルウェアの登録
-logger.AddMiddleware(passwordMaskingMiddleware)
+logger.AddMiddleware(customMiddleware)
 
-// タグ追加ミドルウェア
-logger.AddMiddleware(func(entry *logger.LogEntry, next func(*logger.LogEntry)) {
-    next(entry)
-})
+// ミドルウェアの管理
+logger.ClearMiddleware()                    // 全ミドルウェアをクリア
+count := logger.GetMiddlewareCount()        // ミドルウェア数を取得
 ```
+
+#### パスワードマスキングミドルウェア
+
+LogSpanには、機密情報を自動的にマスクする組み込みミドルウェアが含まれています：
+
+```go
+// デフォルト設定でパスワードマスキングを有効化
+passwordMasker := logger.NewPasswordMaskingMiddleware()
+logger.AddMiddleware(passwordMasker.Middleware())
+
+// カスタム設定でパスワードマスキング
+passwordMasker := logger.NewPasswordMaskingMiddleware().
+    WithMaskString("[REDACTED]").                           // マスク文字列をカスタマイズ
+    WithPasswordKeys([]string{"password", "secret"}).       // マスク対象キーを設定
+    AddPasswordKey("api_key").                              // 追加のキーを指定
+    AddPasswordPattern(regexp.MustCompile(`token=\w+`))     // カスタム正規表現パターン
+
+logger.AddMiddleware(passwordMasker.Middleware())
+
+// 使用例
+logger.D.Infof("User login: username=john password=secret123 token=abc123")
+// 出力: "User login: username=john password=*** token=***"
+```
+
+##### デフォルトでマスクされるキーワード
+- `password`, `passwd`, `pwd`, `pass`
+- `secret`, `token`, `key`, `auth`
+- `credential`, `credentials`, `api_key`
+- `access_token`, `refresh_token`
+
+##### サポートされるパターン
+- `key=value` 形式: `password=secret` → `password=***`
+- JSON形式: `"password":"secret"` → `"password":"***"`
+- カスタム正規表現パターン
 
 ### 6. フォーマッター
 
@@ -286,6 +343,9 @@ type Config struct {
 
     // ソースファイル情報の有効化
     EnableSourceInfo bool
+
+    // JSON出力の整形（インデント）を有効化
+    PrettifyJSON bool
 }
 ```
 
@@ -296,6 +356,38 @@ config := logger.DefaultConfig()
 // MinLevel: InfoLevel
 // Output: os.Stdout
 // EnableSourceInfo: false
+// PrettifyJSON: false
+```
+
+### カスタム設定例
+
+```go
+// 開発環境向け設定（整形されたJSON出力）
+logger.Init(logger.Config{
+    MinLevel:         logger.DebugLevel,
+    Output:           os.Stdout,
+    EnableSourceInfo: true,
+    PrettifyJSON:     true,  // 読みやすい整形されたJSON
+})
+
+// 本番環境向け設定（コンパクトなJSON出力）
+logger.Init(logger.Config{
+    MinLevel:         logger.InfoLevel,
+    Output:           logFile,
+    EnableSourceInfo: false,
+    PrettifyJSON:     false,  // コンパクトなJSON
+})
+```
+
+### 設定の確認
+
+```go
+// ロガーが初期化されているかチェック
+if logger.IsInitialized() {
+    config := logger.GetConfig()
+    fmt.Printf("Current log level: %s\n", config.MinLevel.String())
+    fmt.Printf("Pretty JSON enabled: %t\n", config.PrettifyJSON)
+}
 ```
 
 ## 📚 サンプルコード
@@ -332,19 +424,27 @@ go test -v ./...
 
 ```
 pkg/
-├── logger/                 # メインロガーパッケージ
-│   ├── logger.go          # コアインターフェースとAPI
-│   ├── context_logger.go  # コンテキストロガー実装
-│   ├── direct_logger.go   # ダイレクトロガー実装
-│   ├── config.go          # 設定管理
-│   ├── middleware.go      # ミドルウェア機構
-│   └── context.go         # コンテキストヘルパー
-├── formatter/             # フォーマッター
-│   ├── interface.go       # フォーマッターインターフェース
-│   ├── json_formatter.go  # JSONフォーマッター
-│   └── datadog_formatter.go # DataDogフォーマッター
-└── http_middleware/       # HTTPミドルウェア
-    └── middleware.go
+├── logger/                          # メインロガーパッケージ
+│   ├── logger.go                   # コアインターフェースとAPI
+│   ├── context_logger.go           # コンテキストロガー実装
+│   ├── direct_logger.go            # ダイレクトロガー実装
+│   ├── config.go                   # 設定管理
+│   ├── entry.go                    # ログエントリ構造
+│   ├── middleware.go               # ミドルウェア機構
+│   ├── context.go                  # コンテキストヘルパー
+│   ├── level.go                    # ログレベル定義
+│   └── password_masking_middleware.go # パスワードマスキング
+├── formatter/                       # フォーマッター
+│   ├── interface.go                # フォーマッターインターフェース
+│   ├── json_formatter.go           # JSONフォーマッター
+│   └── datadog_formatter.go        # DataDogフォーマッター
+├── http_middleware/                 # HTTPミドルウェア
+│   └── middleware.go               # HTTPリクエストロギング
+└── examples/                        # 使用例
+    ├── context_logger/             # コンテキストロガー例
+    ├── direct_logger/              # ダイレクトロガー例
+    ├── datadog_formatter/          # DataDogフォーマッター例
+    └── http_middleware_example.go  # HTTPミドルウェア例
 ```
 
 ### 設計原則
