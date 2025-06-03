@@ -14,11 +14,13 @@ logger.Init(config Config)
 
 // Config structure
 type Config struct {
-    MinLevel         LogLevel  // Minimum log level for filtering
-    Output           io.Writer // Output destination
-    EnableSourceInfo bool      // Enable source file information
-    PrettifyJSON     bool      // Enable pretty-printed JSON output
-    MaxLogEntries    int       // Maximum log entries before auto-flush (0 = no limit)
+    MinLevel         LogLevel     // Minimum log level for filtering
+    Output           io.Writer    // Output destination
+    EnableSourceInfo bool         // Enable source file information
+    PrettifyJSON     bool         // Enable pretty-printed JSON output
+    MaxLogEntries    int          // Maximum log entries before auto-flush (0 = no limit)
+    LogType          string       // Type field value in log output (default: "request")
+    ErrorHandler     ErrorHandler // Error handler for logger errors (nil = use global)
 }
 
 // Default configuration
@@ -31,6 +33,8 @@ logger.Init(logger.Config{
     Output:        os.Stdout,
     PrettifyJSON:  true,
     MaxLogEntries: 1000, // Auto-flush after 1000 entries
+    LogType:       "batch", // Custom log type
+    ErrorHandler:  logger.NewDefaultErrorHandler(), // Custom error handler
 })
 ```
 
@@ -76,6 +80,57 @@ directLogger.SetLevelFromString("ERROR")
 directLogger.SetOutput(logFile)
 ```
 
+## Error Handling
+
+### Error Handler Interface
+```go
+type ErrorHandler interface {
+    HandleError(operation string, err error)
+}
+
+// Function type implementation
+type ErrorHandlerFunc func(operation string, err error)
+func (f ErrorHandlerFunc) HandleError(operation string, err error) {
+    f(operation, err)
+}
+```
+
+### Built-in Error Handlers
+```go
+// Default error handler (writes to stderr)
+defaultHandler := logger.NewDefaultErrorHandler()
+logger.SetGlobalErrorHandler(defaultHandler)
+
+// Custom output error handler
+fileHandler := logger.NewDefaultErrorHandlerWithOutput(logFile)
+logger.SetGlobalErrorHandler(fileHandler)
+
+// Silent error handler (ignores all errors)
+silentHandler := &logger.SilentErrorHandler{}
+logger.SetGlobalErrorHandler(silentHandler)
+
+// Function-based error handler
+funcHandler := logger.ErrorHandlerFunc(func(operation string, err error) {
+    fmt.Printf("Logger error in %s: %v\n", operation, err)
+})
+logger.SetGlobalErrorHandler(funcHandler)
+```
+
+### Error Handler Configuration
+```go
+// Set global error handler
+logger.SetGlobalErrorHandler(handler)
+
+// Get current global error handler
+currentHandler := logger.GetGlobalErrorHandler()
+
+// Configure error handler in Config
+logger.Init(logger.Config{
+    MinLevel:     logger.InfoLevel,
+    ErrorHandler: logger.NewDefaultErrorHandlerWithOutput(errorLogFile),
+})
+```
+
 ## Memory Optimization
 
 ### Auto-Flush Configuration
@@ -91,12 +146,24 @@ logger.Init(logger.Config{
 })
 ```
 
+### Memory Pool Management
+```go
+// Pool statistics (for monitoring)
+stats := logger.GetPoolStats()
+fmt.Printf("LogEntry Pool Size: %d\n", stats.LogEntryPoolSize)
+fmt.Printf("Slice Pool Size: %d\n", stats.SlicePoolSize)
+
+// Note: Pool management is automatic and internal
+// LogEntry and []*LogEntry slices are automatically pooled for memory efficiency
+```
+
 ### Auto-Flush Behavior
 - **Context Logger**: Automatically flushes when the number of accumulated log entries reaches `MaxLogEntries`
 - **Entry Counting**: Only entries that pass the log level filter are counted toward the limit
 - **Batch Processing**: Each auto-flush creates a separate log batch with its own start/end time
 - **Context Preservation**: Context fields are preserved across auto-flush operations
 - **Memory Management**: Entries are cleared after each flush to free memory
+- **Pool Optimization**: LogEntry objects are automatically pooled and reused
 
 ### Example: Memory-Efficient Logging
 ```go
@@ -237,4 +304,30 @@ if logger.IsInitialized() {
     config := logger.GetConfig()
     // Use config...
 }
+```
+
+## Advanced Features
+
+### Custom Log Types
+```go
+// Configure custom log type
+logger.Init(logger.Config{
+    LogType: "batch_processing", // Custom type instead of default "request"
+})
+
+// This affects the "type" field in JSON output
+```
+
+### Logger Error Handling
+```go
+// LoggerError type for structured error information
+type LoggerError struct {
+    Operation string
+    Err       error
+}
+
+// Create logger errors
+loggerErr := logger.NewLoggerError("flush", originalError)
+fmt.Printf("Error: %v\n", loggerErr)
+fmt.Printf("Unwrapped: %v\n", loggerErr.Unwrap())
 ```

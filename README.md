@@ -8,6 +8,7 @@ LogSpan is a **zero-dependency** structured logging library for Go that provides
 
 - **🔗 Context-based Log Aggregation**: Consolidates multiple log entries into a single JSON for unified log management
 - **🚀 Zero Dependencies**: Operates solely with Go standard library, no external dependencies required
+- **💾 Memory Efficient**: Automatic memory pooling and configurable auto-flush to minimize memory footprint
 - **Dual-mode logging**: Context-based and direct logging modes
 - **Structured log output**: Consistent JSON-formatted log output
 - **Middleware mechanism**: Customizable log processing pipeline
@@ -48,8 +49,10 @@ LogSpan solves this problem with **context-based log aggregation**:
 
 #### 🚀 Zero-Dependency Lightweight Design
 - **No External Dependencies**: Uses only Go standard library
-- **Lightweight**: Minimal memory footprint
-- **Fast**: Efficient log processing
+- **Lightweight**: Minimal memory footprint with automatic memory pooling
+- **Memory Efficient**: Object pooling for LogEntry and slice reuse to reduce GC pressure
+- **Auto-Flush**: Configurable automatic flushing to control memory usage
+- **Fast**: Efficient log processing with optimized memory management
 - **Secure**: No vulnerability risks from external dependencies
 
 ### Benefits
@@ -407,6 +410,12 @@ type Config struct {
 
     // Maximum entries for context logger (0 = no limit)
     MaxLogEntries int
+
+    // Type field value in log output (default: "request")
+    LogType string
+
+    // Error handler for logger errors (nil = use global)
+    ErrorHandler ErrorHandler
 }
 ```
 
@@ -418,7 +427,9 @@ config := logger.DefaultConfig()
 // Output: os.Stdout
 // EnableSourceInfo: false
 // PrettifyJSON: false
-// MaxLogEntries: 1000
+// MaxLogEntries: 0 (no auto-flush by default)
+// LogType: "request"
+// ErrorHandler: nil (use global)
 ```
 
 ### Custom Configuration Examples
@@ -431,6 +442,8 @@ logger.Init(logger.Config{
     EnableSourceInfo: true,
     PrettifyJSON:     true,  // Pretty-formatted JSON for readability
     MaxLogEntries:    500,   // Auto-flush every 500 entries
+    LogType:          "development", // Custom log type
+    ErrorHandler:     logger.NewDefaultErrorHandler(), // Custom error handler
 })
 
 // Production environment configuration (compact JSON output)
@@ -440,6 +453,8 @@ logger.Init(logger.Config{
     EnableSourceInfo: false,
     PrettifyJSON:     false,  // Compact JSON
     MaxLogEntries:    1000,   // Auto-flush every 1000 entries
+    LogType:          "production",
+    ErrorHandler:     logger.NewDefaultErrorHandlerWithOutput(errorLogFile),
 })
 
 // Memory-efficient configuration
@@ -448,6 +463,7 @@ logger.Init(logger.Config{
     Output:        logFile,
     PrettifyJSON:  false,
     MaxLogEntries: 100,  // Frequent auto-flush to reduce memory usage
+    LogType:       "batch_processing",
 })
 
 // No limit configuration (manual flush only)
@@ -455,6 +471,7 @@ logger.Init(logger.Config{
     MinLevel:      logger.InfoLevel,
     Output:        logFile,
     MaxLogEntries: 0,  // Disable auto-flush
+    ErrorHandler:  &logger.SilentErrorHandler{}, // Silent error handling
 })
 ```
 
@@ -467,7 +484,45 @@ if logger.IsInitialized() {
     fmt.Printf("Current log level: %s\n", config.MinLevel.String())
     fmt.Printf("Pretty JSON enabled: %t\n", config.PrettifyJSON)
     fmt.Printf("Max log entries: %d\n", config.MaxLogEntries)
+    fmt.Printf("Log type: %s\n", config.LogType)
 }
+```
+
+## 🛡️ Error Handling
+
+LogSpan provides comprehensive error handling capabilities:
+
+### Error Handler Interface
+
+```go
+type ErrorHandler interface {
+    HandleError(operation string, err error)
+}
+
+// Function type implementation
+type ErrorHandlerFunc func(operation string, err error)
+```
+
+### Built-in Error Handlers
+
+```go
+// Default error handler (writes to stderr)
+defaultHandler := logger.NewDefaultErrorHandler()
+logger.SetGlobalErrorHandler(defaultHandler)
+
+// Custom output error handler
+fileHandler := logger.NewDefaultErrorHandlerWithOutput(errorLogFile)
+logger.SetGlobalErrorHandler(fileHandler)
+
+// Silent error handler (ignores all errors)
+silentHandler := &logger.SilentErrorHandler{}
+logger.SetGlobalErrorHandler(silentHandler)
+
+// Function-based error handler
+funcHandler := logger.ErrorHandlerFunc(func(operation string, err error) {
+    fmt.Printf("Logger error in %s: %v\n", operation, err)
+})
+logger.SetGlobalErrorHandler(funcHandler)
 ```
 
 ## 🚀 Memory Optimization
@@ -500,12 +555,27 @@ for i := 0; i < 250; i++ {
 logger.FlushContext(ctx) // Output remaining entries
 ```
 
+#### Memory Pool Management
+
+LogSpan automatically manages memory pools for optimal performance:
+
+```go
+// Pool statistics (for monitoring)
+stats := logger.GetPoolStats()
+fmt.Printf("LogEntry Pool Size: %d\n", stats.LogEntryPoolSize)
+fmt.Printf("Slice Pool Size: %d\n", stats.SlicePoolSize)
+
+// Note: Pool management is automatic and internal
+// LogEntry and []*LogEntry slices are automatically pooled for memory efficiency
+```
+
 #### Auto-Flush Features
 
 - **Entry Counting**: Only entries that pass the log level filter are counted
 - **Batch Processing**: Each auto-flush outputs as an independent log batch
 - **Context Preservation**: Context fields are preserved after auto-flush
 - **Memory Release**: Entries are automatically cleared after flush to free memory
+- **Pool Optimization**: LogEntry objects are automatically pooled and reused
 
 #### Memory-Efficient Usage Example
 
@@ -562,6 +632,18 @@ go run examples/context_logger/main.go
 # Auto-flush feature sample
 go run examples/auto_flush/main.go
 
+# Error handling sample
+go run examples/error_handling/main.go
+
+# Advanced configuration sample
+go run examples/advanced_config/main.go
+
+# Custom middleware sample
+go run examples/middleware/main.go
+
+# Custom log type sample
+go run examples/log_type/main.go
+
 # HTTP middleware sample
 go run examples/http_middleware_example.go
 ```
@@ -587,14 +669,19 @@ go test -v ./...
 pkg/
 ├── logger/                          # Main logger package
 │   ├── logger.go                   # Core interface and API
+│   ├── base_logger.go              # Base logger with common functionality
 │   ├── context_logger.go           # Context logger implementation
 │   ├── direct_logger.go            # Direct logger implementation
 │   ├── config.go                   # Configuration management
 │   ├── entry.go                    # Log entry structure
 │   ├── middleware.go               # Middleware mechanism
+│   ├── middleware_manager.go       # Global middleware management
 │   ├── context.go                  # Context helpers
 │   ├── level.go                    # Log level definitions
-│   └── password_masking_middleware.go # Password masking
+│   ├── password_masking_middleware.go # Password masking
+│   ├── error_handler.go            # Error handling
+│   ├── pool.go                     # Memory pool management
+│   └── formatter_utils.go          # Formatter utilities
 ├── formatter/                       # Formatters
 │   ├── interface.go                # Formatter interface
 │   ├── json_formatter.go           # JSON formatter
@@ -605,6 +692,11 @@ pkg/
     ├── context_logger/             # Context logger examples
     ├── direct_logger/              # Direct logger examples
     ├── context_flatten_formatter/  # Context flatten formatter examples
+    ├── auto_flush/                 # Auto-flush examples
+    ├── error_handling/             # Error handling examples
+    ├── advanced_config/            # Advanced configuration examples
+    ├── middleware/                 # Custom middleware examples
+    ├── log_type/                   # Custom log type examples
     └── http_middleware_example.go  # HTTP middleware examples
 ```
 
@@ -613,8 +705,10 @@ pkg/
 1. **Simple API**: Intuitive and easy-to-use interface
 2. **Flexibility**: Design that accommodates various use cases
 3. **Extensibility**: Customization through middleware
-4. **Performance**: Efficient log processing
+4. **Performance**: Efficient log processing with memory pooling
 5. **Concurrency Safety**: Goroutine-safe implementation
+6. **Reliability**: Comprehensive error handling and recovery mechanisms
+7. **Zero Dependencies**: Self-contained with no external dependencies
 
 ## 🤝 Contributing
 
@@ -632,7 +726,6 @@ This project is released under the MIT License. See the [LICENSE](LICENSE) file 
 
 - [Go Documentation](https://pkg.go.dev/github.com/zentooo/logspan)
 - [Examples](./examples/)
-- [Design Document](./design.md)
 
 ## 📞 Support
 

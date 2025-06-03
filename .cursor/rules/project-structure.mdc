@@ -13,14 +13,19 @@ This project is a Go logging library that provides both context-based and direct
 The main package is located in the `pkg/logger/` directory and contains the following key files:
 
 - [logger.go](mdc:pkg/logger/logger.go) - Core logger interface and main API functions
+- [base_logger.go](mdc:pkg/logger/base_logger.go) - Base logger implementation with common functionality
 - [context_logger.go](mdc:pkg/logger/context_logger.go) - Context-based logger implementation
 - [direct_logger.go](mdc:pkg/logger/direct_logger.go) - Direct logging implementation
 - [config.go](mdc:pkg/logger/config.go) - Configuration and initialization
 - [entry.go](mdc:pkg/logger/entry.go) - Log entry structure definitions
 - [middleware.go](mdc:pkg/logger/middleware.go) - Middleware interface and processing framework
+- [middleware_manager.go](mdc:pkg/logger/middleware_manager.go) - Global middleware management
 - [context.go](mdc:pkg/logger/context.go) - Context helper functions
 - [level.go](mdc:pkg/logger/level.go) - Log level definitions and utilities
 - [password_masking_middleware.go](mdc:pkg/logger/password_masking_middleware.go) - Password masking middleware implementation
+- [error_handler.go](mdc:pkg/logger/error_handler.go) - Error handling interfaces and implementations
+- [pool.go](mdc:pkg/logger/pool.go) - Memory pool management for LogEntry objects
+- [formatter_utils.go](mdc:pkg/logger/formatter_utils.go) - Formatter utility functions
 
 ### Formatters
 The `pkg/formatter/` directory contains different output format implementations:
@@ -34,23 +39,39 @@ Optional HTTP server middleware implementations are in the `pkg/http_middleware/
 
 ### Examples
 The `examples/` directory contains usage examples:
-- [context_logger/](mdc:examples/context_logger/) - Context logger usage examples
-- [direct_logger/](mdc:examples/direct_logger/) - Direct logger usage examples
-- [context_flatten_formatter/](mdc:examples/context_flatten_formatter/) - Context flatten formatter examples
+- [context_logger/](mdc:examples/context_logger) - Context logger usage examples
+- [direct_logger/](mdc:examples/direct_logger) - Direct logger usage examples
+- [context_flatten_formatter/](mdc:examples/context_flatten_formatter) - Context flatten formatter examples
+- [auto_flush/](mdc:examples/auto_flush) - Auto-flush feature demonstration
+- [error_handling/](mdc:examples/error_handling) - Error handling examples
+- [advanced_config/](mdc:examples/advanced_config) - Advanced configuration examples
+- [middleware/](mdc:examples/middleware) - Custom middleware examples
+- [log_type/](mdc:examples/log_type) - Custom log type examples
 - [http_middleware_example.go](mdc:examples/http_middleware_example.go) - HTTP middleware usage
 
 ### Test Files
 Comprehensive test coverage with the following test files:
 - [context_logger_test.go](mdc:pkg/logger/context_logger_test.go) - Context logger tests
 - [direct_logger_test.go](mdc:pkg/logger/direct_logger_test.go) - Direct logger tests
+- [base_logger_test.go](mdc:pkg/logger/base_logger_test.go) - Base logger tests
+- [config_test.go](mdc:pkg/logger/config_test.go) - Configuration tests
+- [context_test.go](mdc:pkg/logger/context_test.go) - Context helper tests
+- [level_test.go](mdc:pkg/logger/level_test.go) - Log level tests
 - [middleware_test.go](mdc:pkg/logger/middleware_test.go) - Middleware framework tests
+- [middleware_manager_test.go](mdc:pkg/logger/middleware_manager_test.go) - Middleware manager tests
 - [password_masking_middleware_test.go](mdc:pkg/logger/password_masking_middleware_test.go) - Password masking tests
+- [error_handler_test.go](mdc:pkg/logger/error_handler_test.go) - Error handler tests
+- [pool_test.go](mdc:pkg/logger/pool_test.go) - Memory pool tests
+- [formatter_utils_test.go](mdc:pkg/logger/formatter_utils_test.go) - Formatter utility tests
+- [source_info_test.go](mdc:pkg/logger/source_info_test.go) - Source information tests
 - [json_formatter_test.go](mdc:pkg/formatter/json_formatter_test.go) - JSON formatter tests
 - [context_flatten_formatter_test.go](mdc:pkg/formatter/context_flatten_formatter_test.go) - Context flatten formatter tests
 - [middleware_test.go](mdc:pkg/http_middleware/middleware_test.go) - HTTP middleware tests
 
 ## Key Features
 - **Dual-mode logging**: Context-based aggregation and direct immediate output
+- **Memory optimization**: Object pooling and auto-flush capabilities
+- **Error handling**: Comprehensive error handling with customizable handlers
 - **Transparent context management**: Automatic context propagation through HTTP middleware
 - **Simple API interface**: Intuitive and easy-to-use logging methods
 - **Extensibility through middleware**: Pluggable middleware system for log processing
@@ -60,6 +81,7 @@ Comprehensive test coverage with the following test files:
 - **HTTP integration**: Automatic request logging and context setup
 - **Thread-safe**: Goroutine-safe implementation
 - **Configurable**: Flexible configuration options
+- **Zero dependencies**: Uses only Go standard library
 
 ## Architecture
 
@@ -68,25 +90,42 @@ Comprehensive test coverage with the following test files:
 pkg/
 ├── logger/                          # Core logging functionality
 │   ├── logger.go                   # Main API and global functions
+│   ├── base_logger.go              # Base logger with common functionality
 │   ├── context_logger.go           # Context-based logger
 │   ├── direct_logger.go            # Direct logger
 │   ├── config.go                   # Configuration management
 │   ├── entry.go                    # Log entry structure
 │   ├── middleware.go               # Middleware framework
+│   ├── middleware_manager.go       # Global middleware management
 │   ├── context.go                  # Context utilities
 │   ├── level.go                    # Log level definitions
-│   └── password_masking_middleware.go # Password masking
+│   ├── password_masking_middleware.go # Password masking
+│   ├── error_handler.go            # Error handling
+│   ├── pool.go                     # Memory pool management
+│   └── formatter_utils.go          # Formatter utilities
 ├── formatter/                       # Output formatters
 │   ├── interface.go                # Formatter interface
 │   ├── json_formatter.go           # JSON output
 │   └── context_flatten_formatter.go # Context flatten format
-└── http_middleware/                 # HTTP integration
-    └── middleware.go               # HTTP middleware
+├── http_middleware/                 # HTTP integration
+│   └── middleware.go               # HTTP middleware
+└── examples/                        # Usage examples
+    ├── context_logger/             # Context logger examples
+    ├── direct_logger/              # Direct logger examples
+    ├── context_flatten_formatter/  # Context flatten formatter examples
+    ├── auto_flush/                 # Auto-flush examples
+    ├── error_handling/             # Error handling examples
+    ├── advanced_config/            # Advanced configuration examples
+    ├── middleware/                 # Custom middleware examples
+    ├── log_type/                   # Custom log type examples
+    └── http_middleware_example.go  # HTTP middleware examples
 ```
 
 ### Design Principles
 1. **Simplicity**: Clean and intuitive API design
 2. **Flexibility**: Support for various use cases and output formats
 3. **Extensibility**: Middleware-based architecture for customization
-4. **Performance**: Efficient log processing and minimal overhead
+4. **Performance**: Efficient log processing and minimal overhead with memory pooling
 5. **Safety**: Thread-safe operations and secure handling of sensitive data
+6. **Reliability**: Comprehensive error handling and recovery mechanisms
+7. **Zero Dependencies**: Self-contained with no external dependencies
