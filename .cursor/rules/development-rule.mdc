@@ -3,6 +3,10 @@ description:
 globs:
 alwaysApply: false
 ---
+# test
+
+`go tool gotestsum -- -v -race ./...`
+
 # lint
 
 `golangci-lint run`

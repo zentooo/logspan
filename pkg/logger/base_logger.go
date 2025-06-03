@@ -52,6 +52,8 @@ func (b *BaseLogger) SetLevelFromString(level string) {
 
 // isLevelEnabled checks if the given level should be logged
 func (b *BaseLogger) isLevelEnabled(level LogLevel) bool {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
 	return IsLevelEnabled(level, b.minLevel)
 }
 

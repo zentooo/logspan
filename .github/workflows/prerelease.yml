@@ -47,7 +47,7 @@ jobs:
       run: go mod download
 
     - name: Run tests
-      run: go test -v -race ./...
+      run: go tool gotestsum -- -v -race ./...
 
     - name: Run linter
       uses: golangci/golangci-lint-action@v8
