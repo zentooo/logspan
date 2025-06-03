@@ -60,3 +60,36 @@ func ParseLogLevel(level string) LogLevel {
 		return InfoLevel // Default to INFO level
 	}
 }
+
+// GreaterThan returns true if this log level is greater than the other level
+func (l LogLevel) GreaterThan(other LogLevel) bool {
+	return l > other
+}
+
+// GreaterThanOrEqual returns true if this log level is greater than or equal to the other level
+func (l LogLevel) GreaterThanOrEqual(other LogLevel) bool {
+	return l >= other
+}
+
+// LessThan returns true if this log level is less than the other level
+func (l LogLevel) LessThan(other LogLevel) bool {
+	return l < other
+}
+
+// LessThanOrEqual returns true if this log level is less than or equal to the other level
+func (l LogLevel) LessThanOrEqual(other LogLevel) bool {
+	return l <= other
+}
+
+// IsLevelEnabled checks if the given level should be logged based on the minimum level
+func IsLevelEnabled(level, minLevel LogLevel) bool {
+	return level.GreaterThanOrEqual(minLevel)
+}
+
+// GetHigherLevel returns the higher of two log levels
+func GetHigherLevel(level1, level2 LogLevel) LogLevel {
+	if level1.GreaterThan(level2) {
+		return level1
+	}
+	return level2
+}

@@ -76,17 +76,25 @@ func processWithGlobalMiddleware(entry *LogEntry, final func(*LogEntry)) {
 // Usage: logger.D.Infof("message", args...)
 var D Logger = NewDirectLogger()
 
+// createDefaultFormatter creates a default formatter based on global configuration
+func createDefaultFormatter() formatter.Formatter {
+	config := GetConfig()
+	if config.PrettifyJSON {
+		return formatter.NewJSONFormatterWithIndent("  ")
+	}
+	return formatter.NewJSONFormatter()
+}
+
 // formatLogOutput creates a LogOutput structure and formats it using the given formatter
 // If formatter is nil, uses default JSONFormatter
 func formatLogOutput(entries []*LogEntry, contextFields map[string]interface{}, startTime, endTime time.Time, f formatter.Formatter) ([]byte, error) {
 	elapsed := endTime.Sub(startTime).Milliseconds()
 
 	// Find the highest severity level
-	maxSeverity := "DEBUG"
+	maxSeverity := DebugLevel
 	for _, entry := range entries {
-		if isHigherSeverity(entry.Level, maxSeverity) {
-			maxSeverity = entry.Level
-		}
+		entryLevel := ParseLogLevel(entry.Level)
+		maxSeverity = GetHigherLevel(entryLevel, maxSeverity)
 	}
 
 	// Convert logger.LogEntry to formatter.LogEntry
@@ -107,7 +115,7 @@ func formatLogOutput(entries []*LogEntry, contextFields map[string]interface{}, 
 		Type:    "request",
 		Context: contextFields,
 		Runtime: formatter.RuntimeInfo{
-			Severity:  maxSeverity,
+			Severity:  maxSeverity.String(),
 			StartTime: startTime.Format(time.RFC3339Nano),
 			EndTime:   endTime.Format(time.RFC3339Nano),
 			Elapsed:   elapsed,
@@ -118,25 +126,8 @@ func formatLogOutput(entries []*LogEntry, contextFields map[string]interface{}, 
 	// Use provided formatter or default JSONFormatter
 	if f == nil {
 		// Use default JSONFormatter with prettify setting from global config
-		config := GetConfig()
-		if config.PrettifyJSON {
-			f = formatter.NewJSONFormatterWithIndent("  ")
-		} else {
-			f = formatter.NewJSONFormatter()
-		}
+		f = createDefaultFormatter()
 	}
 
 	return f.Format(logOutput)
-}
-
-// isHigherSeverity compares two severity levels
-func isHigherSeverity(level1, level2 string) bool {
-	levels := map[string]int{
-		"DEBUG":    0,
-		"INFO":     1,
-		"WARN":     2,
-		"ERROR":    3,
-		"CRITICAL": 4,
-	}
-	return levels[level1] > levels[level2]
 }

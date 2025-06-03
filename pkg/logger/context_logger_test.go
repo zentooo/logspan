@@ -186,22 +186,22 @@ func TestContextAPI_Functions(t *testing.T) {
 
 func TestIsHigherSeverity(t *testing.T) {
 	tests := []struct {
-		level1   string
-		level2   string
+		level1   LogLevel
+		level2   LogLevel
 		expected bool
 	}{
-		{"ERROR", "INFO", true},
-		{"CRITICAL", "ERROR", true},
-		{"DEBUG", "INFO", false},
-		{"INFO", "INFO", false},
-		{"WARN", "DEBUG", true},
+		{ErrorLevel, InfoLevel, true},
+		{CriticalLevel, ErrorLevel, true},
+		{DebugLevel, InfoLevel, false},
+		{InfoLevel, InfoLevel, false},
+		{WarnLevel, DebugLevel, true},
 	}
 
 	for _, test := range tests {
-		result := isHigherSeverity(test.level1, test.level2)
+		result := test.level1.GreaterThan(test.level2)
 		if result != test.expected {
-			t.Errorf("isHigherSeverity(%s, %s) = %v, expected %v",
-				test.level1, test.level2, result, test.expected)
+			t.Errorf("%s.GreaterThan(%s) = %v, expected %v",
+				test.level1.String(), test.level2.String(), result, test.expected)
 		}
 	}
 }

@@ -20,19 +20,10 @@ type DirectLogger struct {
 
 // NewDirectLogger creates a new DirectLogger instance
 func NewDirectLogger() *DirectLogger {
-	// Get global config to determine formatter settings
-	config := GetConfig()
-	var jsonFormatter formatter.Formatter
-	if config.PrettifyJSON {
-		jsonFormatter = formatter.NewJSONFormatterWithIndent("  ")
-	} else {
-		jsonFormatter = formatter.NewJSONFormatter()
-	}
-
 	return &DirectLogger{
 		output:    os.Stdout,
 		minLevel:  InfoLevel,
-		formatter: jsonFormatter,
+		formatter: createDefaultFormatter(),
 	}
 }
 
@@ -64,7 +55,7 @@ func (l *DirectLogger) SetLevelFromString(level string) {
 
 // isLevelEnabled checks if the given level should be logged
 func (l *DirectLogger) isLevelEnabled(level LogLevel) bool {
-	return level >= l.minLevel
+	return IsLevelEnabled(level, l.minLevel)
 }
 
 // logf writes a log entry with the given level and message in structured format

@@ -28,12 +28,6 @@ type ContextLogger struct {
 func NewContextLogger() *ContextLogger {
 	// Get global config to determine formatter settings
 	config := GetConfig()
-	var jsonFormatter formatter.Formatter
-	if config.PrettifyJSON {
-		jsonFormatter = formatter.NewJSONFormatterWithIndent("  ")
-	} else {
-		jsonFormatter = formatter.NewJSONFormatter()
-	}
 
 	return &ContextLogger{
 		entries:    make([]*LogEntry, 0),
@@ -41,7 +35,7 @@ func NewContextLogger() *ContextLogger {
 		startTime:  time.Now(),
 		output:     os.Stdout,
 		minLevel:   config.MinLevel,
-		formatter:  jsonFormatter,
+		formatter:  createDefaultFormatter(),
 		maxEntries: config.MaxLogEntries,
 	}
 }
@@ -62,7 +56,7 @@ func (l *ContextLogger) SetLevel(level LogLevel) {
 
 // isLevelEnabled checks if the given level should be logged
 func (l *ContextLogger) isLevelEnabled(level LogLevel) bool {
-	return level >= l.minLevel
+	return IsLevelEnabled(level, l.minLevel)
 }
 
 // addEntry adds a log entry to the context logger

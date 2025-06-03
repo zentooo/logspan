@@ -57,7 +57,7 @@ func Init(config Config) {
 		directLogger.SetOutput(globalConfig.Output)
 		directLogger.SetLevel(globalConfig.MinLevel)
 
-		// Update formatter based on PrettifyJSON setting
+		// Update formatter based on PrettifyJSON setting (avoid calling createDefaultFormatter to prevent deadlock)
 		var jsonFormatter formatter.Formatter
 		if globalConfig.PrettifyJSON {
 			jsonFormatter = formatter.NewJSONFormatterWithIndent("  ")
