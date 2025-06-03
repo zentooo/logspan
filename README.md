@@ -88,9 +88,45 @@ func init() {
         EnableSourceInfo: true,  // ソース情報（関数名、ファイル名、行番号）を有効化
         PrettifyJSON:     true,  // 読みやすいJSON形式で出力
         MaxLogEntries:    1000,  // 1000エントリで自動フラッシュ
+        LogType:          "batch_job", // カスタムログタイプ（デフォルト: "request"）
     }
     logger.Init(config)
 }
+```
+
+#### ログタイプのカスタマイズ
+
+LogSpanでは、ログ出力の`type`フィールドをカスタマイズできます。これにより、異なる種類の処理やアプリケーションコンポーネントを区別できます：
+
+```go
+// バッチ処理用の設定
+logger.Init(logger.Config{
+    LogType: "batch_job",
+})
+
+// API操作用の設定
+logger.Init(logger.Config{
+    LogType: "api_operation",
+})
+
+// バックグラウンドタスク用の設定
+logger.Init(logger.Config{
+    LogType: "background_task",
+})
+
+// データ処理用の設定
+logger.Init(logger.Config{
+    LogType: "data_processing",
+})
+```
+
+##### 一般的なログタイプの例
+- `"request"` - HTTPリクエストや一般的な操作（デフォルト）
+- `"batch_job"` - バッチ処理操作
+- `"api_operation"` - API固有の操作
+- `"background_task"` - バックグラウンド処理
+- `"data_processing"` - データ処理ジョブ
+- `"system_event"` - システムレベルのイベント
 ```
 
 #### 個別ロガーの設定
@@ -391,6 +427,33 @@ contextLogger.SetFormatter(formatter.NewContextFlattenFormatter())
 }
 ```
 
+### カスタムログタイプ形式
+
+`LogType`を設定することで、`type`フィールドをカスタマイズできます：
+
+```json
+{
+  "type": "batch_job",
+  "context": {
+    "job_id": "job-12345",
+    "batch_size": 1000
+  },
+  "runtime": {
+    "severity": "INFO",
+    "startTime": "2023-10-27T09:59:58.123456+09:00",
+    "endTime": "2023-10-27T10:00:00.223456+09:00",
+    "elapsed": 150,
+    "lines": [
+      {
+        "timestamp": "2023-10-27T09:59:59.123456+09:00",
+        "level": "INFO",
+        "message": "バッチ処理を開始"
+      }
+    ]
+  }
+}
+```
+
 ### ソース情報付きの出力形式
 
 `EnableSourceInfo: true` の場合、各ログエントリにソース情報が追加されます：
@@ -469,6 +532,9 @@ type Config struct {
 
     // コンテキストロガーの最大エントリ数（0 = 制限なし）
     MaxLogEntries int
+
+    // ログタイプ
+    LogType string
 }
 ```
 
