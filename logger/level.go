@@ -44,6 +44,8 @@ func (l LogLevel) String() string {
 }
 
 // ParseLogLevel parses a string into a LogLevel
+// Supported values: "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
+// Returns InfoLevel for any unrecognized input
 func ParseLogLevel(level string) LogLevel {
 	switch level {
 	case debugLevelString:
