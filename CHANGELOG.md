@@ -1,4 +1,9 @@
 # Changelog
+## v0.0.7 (2025-06-04)
+
+### Changes
+- Merge branch 'main' of github.com:zentooo/logspan (7c2a2c0)
+- Add documentation for ParseLogLevel function to specify supported values and default behavior for unrecognized input (a8e9693)
 ## v0.0.6 (2025-06-03)
 
 ### Changes
