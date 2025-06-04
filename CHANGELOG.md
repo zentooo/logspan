@@ -1,4 +1,12 @@
 # Changelog
+## v0.0.6 (2025-06-03)
+
+### Changes
+- Enhance documentation in doc.go to provide a comprehensive overview of LogSpan's features, including context-based log aggregation, memory optimization, and configuration options. Update CI workflow to support Go versions 1.22, 1.23, and 1.24 for improved compatibility. (9259939)
+- Update documentation and code references to reflect the new package structure. Changed import paths from 'pkg/' to 'logspan/' in doc.go, README files, and context_logger.go for improved clarity and consistency. (49ddc9e)
+- Merge branch 'main' of github.com:zentooo/logspan (941369d)
+- Update documentation to reflect package structure changes. Changed import paths from 'github.com/zentooo/logspan/pkg/' to 'github.com/zentooo/logspan/' in doc.go, README files, and examples. Removed deprecated formatter files and updated related tests. This enhances clarity and consistency across the codebase. (e077779)
+- Enhance README and examples for Direct Logger usage. Updated README_JA.md to recommend using the global logger.D instance and clarified advanced usage with NewDirectLogger(). Modified examples/README.md to reflect these changes and demonstrate both basic and advanced usage in examples/direct_logger/main.go. (bdbd6c9)
 ## v0.0.5 (2025-06-03)
 
 ### Changes
