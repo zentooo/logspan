@@ -1,4 +1,9 @@
 # Changelog
+## v0.0.8 (2025-06-06)
+
+### Changes
+- Merge pull request #6 from zentooo/warn_if_context_logger_missing (0f2c1db)
+- Enhance FromContext function to emit a warning when no logger is found in context, improving error handling and debugging capabilities. (39de409)
 ## v0.0.7 (2025-06-04)
 
 ### Changes
