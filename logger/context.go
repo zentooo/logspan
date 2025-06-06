@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"errors"
 )
 
 // contextKey is a private type for context keys to avoid collisions
@@ -18,11 +19,19 @@ func WithLogger(ctx context.Context, logger *ContextLogger) context.Context {
 }
 
 // FromContext retrieves the logger from the context
-// If no logger is found, it returns a new ContextLogger
+// If no logger is found, it returns a new ContextLogger and emits a warning
 func FromContext(ctx context.Context) *ContextLogger {
 	if logger, ok := ctx.Value(loggerContextKey).(*ContextLogger); ok {
 		return logger
 	}
+
+	// Emit warning when logger is not found in context
+	if handler := GetGlobalErrorHandler(); handler != nil {
+		handler.HandleError("FromContext",
+			NewLoggerError("context_logger_missing",
+				errors.New("logger not found in context - WithLogger() may not have been called")))
+	}
+
 	// Return a new logger if none is found in context
 	return NewContextLogger()
 }
