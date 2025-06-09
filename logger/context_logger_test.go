@@ -92,6 +92,10 @@ func TestContextLogger_LevelFiltering(t *testing.T) {
 }
 
 func TestContextLogger_EmptyFlush(t *testing.T) {
+	// Test the old behavior with FlushEmpty disabled
+	Init(WithFlushEmpty(false))
+	defer Init() // Reset to default
+
 	var buf bytes.Buffer
 	logger := NewContextLogger()
 	logger.SetOutput(&buf)
@@ -100,7 +104,55 @@ func TestContextLogger_EmptyFlush(t *testing.T) {
 	logger.Flush()
 
 	if buf.Len() > 0 {
-		t.Error("Expected no output when flushing empty logger")
+		t.Error("Expected no output when flushing empty logger with FlushEmpty disabled")
+	}
+}
+
+func TestContextLogger_FlushEmptyEnabled(t *testing.T) {
+	// Test with FlushEmpty enabled (default)
+	Init(WithFlushEmpty(true))
+	defer Init() // Reset to default
+
+	var buf bytes.Buffer
+	logger := NewContextLogger()
+	logger.SetOutput(&buf)
+
+	// Add context fields but no log entries
+	logger.AddContextValue("request_id", "test-123")
+	logger.AddContextValue("user_id", "user-456")
+
+	// Flush without any log entries - should output with FlushEmpty enabled
+	logger.Flush()
+
+	output := buf.String()
+	if buf.Len() == 0 {
+		t.Error("Expected output when FlushEmpty is enabled")
+	}
+	if !strings.Contains(output, "request_id") {
+		t.Error("Expected context fields in output")
+	}
+	if !strings.Contains(output, "test-123") {
+		t.Error("Expected context values in output")
+	}
+}
+
+func TestContextLogger_FlushEmptyDisabled(t *testing.T) {
+	// Test with FlushEmpty disabled
+	Init(WithFlushEmpty(false))
+	defer Init() // Reset to default
+
+	var buf bytes.Buffer
+	logger := NewContextLogger()
+	logger.SetOutput(&buf)
+
+	// Add context fields but no log entries
+	logger.AddContextValue("request_id", "test-123")
+
+	// Flush without any log entries - should not output with FlushEmpty disabled
+	logger.Flush()
+
+	if buf.Len() > 0 {
+		t.Error("Expected no output when FlushEmpty is disabled and no entries exist")
 	}
 }
 

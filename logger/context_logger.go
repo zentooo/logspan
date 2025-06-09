@@ -94,7 +94,15 @@ func (l *ContextLogger) addEntry(level LogLevel, message string) {
 // flushInternal performs the flush operation without acquiring the mutex
 // This method assumes the mutex is already held by the caller
 func (l *ContextLogger) flushInternal() {
-	if l.output == nil || len(l.entries) == 0 {
+	if l.output == nil {
+		return
+	}
+
+	// Get global config to check FlushEmpty setting
+	config := GetConfig()
+
+	// Check if we should flush when entries are empty
+	if len(l.entries) == 0 && !config.FlushEmpty {
 		return
 	}
 
