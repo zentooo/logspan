@@ -32,6 +32,10 @@ type Config struct {
 	// ErrorHandler is the error handler for logger errors
 	// If nil, the global error handler will be used
 	ErrorHandler ErrorHandler
+
+	// FlushEmpty enables flushing even when there are no log entries
+	// Useful for HTTP request logging to record request context even without logs
+	FlushEmpty bool
 }
 
 // Option is a function that configures the logger
@@ -87,6 +91,14 @@ func WithErrorHandler(handler ErrorHandler) Option {
 	}
 }
 
+// WithFlushEmpty enables or disables flushing when there are no log entries
+// This is useful for HTTP request logging to record request context even without logs
+func WithFlushEmpty(enabled bool) Option {
+	return func(c *Config) {
+		c.FlushEmpty = enabled
+	}
+}
+
 // defaultConfig returns a default configuration
 func defaultConfig() Config {
 	return Config{
@@ -97,6 +109,7 @@ func defaultConfig() Config {
 		MaxLogEntries:    0,         // No auto-flush by default
 		LogType:          "request", // Default log type
 		ErrorHandler:     nil,       // Use global error handler
+		FlushEmpty:       true,      // Default to true
 	}
 }
 

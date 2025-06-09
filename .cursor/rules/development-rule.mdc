@@ -15,3 +15,5 @@ alwaysApply: false
 # ルール
 
 * コードを書いたあとは必ずtestとlintを通すこと
+* 公開インタフェースに変更があった場合、必ずREADMEとexamplesをチェックして更新すること
+* 「PRして」と言われたらPRのtitle, descritpionをgit main diffの結果から生成し、`gh` コマンドでPRを作成する

@@ -429,6 +429,7 @@ logger.Init(
     logger.WithSourceInfo(true),                  // Enable source file information
     logger.WithPrettifyJSON(true),                // Enable JSON pretty-printing
     logger.WithMaxLogEntries(1000),               // Set auto-flush threshold (0 = no limit)
+    logger.WithFlushEmpty(true),                  // Enable flushing empty entries (default: true)
     logger.WithLogType("request"),                // Set log type field value
     logger.WithErrorHandler(errorHandler),        // Set error handler
 )
@@ -439,6 +440,7 @@ logger.WithOutput(output io.Writer)           // Output destination
 logger.WithSourceInfo(enabled bool)           // Enable/disable source file information
 logger.WithPrettifyJSON(enabled bool)         // Enable/disable JSON pretty-printing
 logger.WithMaxLogEntries(count int)           // Auto-flush threshold (0 = no limit)
+logger.WithFlushEmpty(enabled bool)           // Enable/disable flushing empty entries
 logger.WithLogType(logType string)            // Log type field value
 logger.WithErrorHandler(handler ErrorHandler) // Error handler for logger errors
 ```
@@ -456,6 +458,7 @@ logger.Init(
     logger.WithSourceInfo(false),                  // Source info disabled by default
     logger.WithPrettifyJSON(false),                // Compact JSON by default
     logger.WithMaxLogEntries(0),                   // No auto-flush by default
+    logger.WithFlushEmpty(true),                   // Flush empty entries by default
     logger.WithLogType("request"),                 // Default log type
     logger.WithErrorHandler(nil),                  // Use global error handler
 )
@@ -646,6 +649,117 @@ logger.Init(
 
 // In this case, entries accumulate until manual FlushContext() call
 ```
+
+### Empty Entry Flush Feature (FlushEmpty)
+
+LogSpan provides the ability to output context information even when there are no log entries. This is particularly useful for HTTP request logging, tracing, and other scenarios where you want to record that processing occurred.
+
+#### Basic Operation
+
+```go
+// FlushEmpty feature is enabled by default
+logger.Init(
+    logger.WithFlushEmpty(true), // Default value (can be omitted)
+)
+
+ctx := context.Background()
+contextLogger := logger.NewContextLogger()
+ctx = logger.WithLogger(ctx, contextLogger)
+
+// Add only context information
+logger.AddContextValue(ctx, "request_id", "req-12345")
+logger.AddContextValue(ctx, "method", "GET")
+logger.AddContextValue(ctx, "path", "/api/users")
+
+// Flush without adding any log entries
+logger.FlushContext(ctx)
+// Output: JSON containing context information (lines array is empty)
+```
+
+#### Output Example with FlushEmpty Enabled
+
+```json
+{
+  "type": "request",
+  "context": {
+    "request_id": "req-12345",
+    "method": "GET",
+    "path": "/api/users",
+    "user_agent": "Mozilla/5.0"
+  },
+  "runtime": {
+    "severity": "DEBUG",
+    "startTime": "2023-10-27T09:59:58.123456+09:00",
+    "endTime": "2023-10-27T09:59:58.123456+09:00",
+    "elapsed": 0,
+    "lines": []
+  }
+}
+```
+
+#### Behavior with FlushEmpty Disabled
+
+```go
+// Disable FlushEmpty feature
+logger.Init(
+    logger.WithFlushEmpty(false),
+)
+
+ctx := context.Background()
+contextLogger := logger.NewContextLogger()
+ctx = logger.WithLogger(ctx, contextLogger)
+
+// Add only context information
+logger.AddContextValue(ctx, "request_id", "req-67890")
+
+// Flush without adding any log entries
+logger.FlushContext(ctx)
+// Output: None (traditional behavior)
+```
+
+#### HTTP Request Logging Example
+
+```go
+// Usage example in HTTP middleware
+func loggingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        ctx := r.Context()
+        contextLogger := logger.NewContextLogger()
+        ctx = logger.WithLogger(ctx, contextLogger)
+
+        // Add request information to context
+        logger.AddContextValue(ctx, "request_id", generateRequestID())
+        logger.AddContextValue(ctx, "method", r.Method)
+        logger.AddContextValue(ctx, "path", r.URL.Path)
+        logger.AddContextValue(ctx, "user_agent", r.UserAgent())
+        logger.AddContextValue(ctx, "remote_addr", r.RemoteAddr)
+
+        start := time.Now()
+
+        // Process request
+        next.ServeHTTP(w, r.WithContext(ctx))
+
+        // Add processing time to context
+        logger.AddContextValue(ctx, "elapsed_ms", time.Since(start).Milliseconds())
+
+        // Output request record even without log entries
+        // FlushEmpty=true ensures context information is always recorded
+        logger.FlushContext(ctx)
+    })
+}
+```
+
+#### Benefits
+
+1. **Request Tracing**: Record all HTTP requests
+2. **Debug Support**: Confirm that processing was executed
+3. **Metrics Collection**: Gather statistics on access counts and processing times
+4. **Audit Logging**: Meet security and compliance requirements
+
+#### Usage Guidelines
+
+- **FlushEmpty=true (Recommended)**: HTTP request logging, batch processing, scenarios where traceability is important
+- **FlushEmpty=false**: Memory-efficient scenarios where recording is unnecessary when no log entries exist
 
 ## 📚 Sample Code
 

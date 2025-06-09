@@ -138,6 +138,7 @@ func init() {
         logger.WithSourceInfo(true),                       // ソース情報（関数名、ファイル名、行番号）を有効化
         logger.WithPrettifyJSON(true),                     // 読みやすいJSON形式で出力
         logger.WithMaxLogEntries(1000),                    // 1000エントリで自動フラッシュ
+        logger.WithFlushEmpty(true),                       // 空のエントリでもフラッシュ（HTTPリクエストログ等に有用、デフォルト: true）
         logger.WithLogType("batch_job"),                   // カスタムログタイプ（デフォルト: "request"）
     )
 }
@@ -733,6 +734,117 @@ logger.Init(
 
 // この場合、手動でFlushContext()を呼ぶまでエントリが蓄積される
 ```
+
+### 空エントリフラッシュ機能（FlushEmpty）
+
+LogSpanは、ログエントリが空の場合でもコンテキスト情報を出力する機能を提供します。これは、HTTPリクエストログやトレーシングなど、処理の発生を記録したい場合に特に有用です。
+
+#### 基本的な動作
+
+```go
+// FlushEmpty機能はデフォルトで有効
+logger.Init(
+    logger.WithFlushEmpty(true), // デフォルト値（省略可能）
+)
+
+ctx := context.Background()
+contextLogger := logger.NewContextLogger()
+ctx = logger.WithLogger(ctx, contextLogger)
+
+// コンテキスト情報のみ追加
+logger.AddContextValue(ctx, "request_id", "req-12345")
+logger.AddContextValue(ctx, "method", "GET")
+logger.AddContextValue(ctx, "path", "/api/users")
+
+// ログエントリを追加せずにフラッシュ
+logger.FlushContext(ctx)
+// 出力: コンテキスト情報を含むJSONが出力される（linesは空配列）
+```
+
+#### FlushEmpty有効時の出力例
+
+```json
+{
+  "type": "request",
+  "context": {
+    "request_id": "req-12345",
+    "method": "GET",
+    "path": "/api/users",
+    "user_agent": "Mozilla/5.0"
+  },
+  "runtime": {
+    "severity": "DEBUG",
+    "startTime": "2023-10-27T09:59:58.123456+09:00",
+    "endTime": "2023-10-27T09:59:58.123456+09:00",
+    "elapsed": 0,
+    "lines": []
+  }
+}
+```
+
+#### FlushEmpty無効時の動作
+
+```go
+// FlushEmpty機能を無効化
+logger.Init(
+    logger.WithFlushEmpty(false),
+)
+
+ctx := context.Background()
+contextLogger := logger.NewContextLogger()
+ctx = logger.WithLogger(ctx, contextLogger)
+
+// コンテキスト情報のみ追加
+logger.AddContextValue(ctx, "request_id", "req-67890")
+
+// ログエントリを追加せずにフラッシュ
+logger.FlushContext(ctx)
+// 出力: なし（従来の動作）
+```
+
+#### HTTPリクエストログでの活用例
+
+```go
+// HTTPミドルウェアでの使用例
+func loggingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        ctx := r.Context()
+        contextLogger := logger.NewContextLogger()
+        ctx = logger.WithLogger(ctx, contextLogger)
+
+        // リクエスト情報をコンテキストに追加
+        logger.AddContextValue(ctx, "request_id", generateRequestID())
+        logger.AddContextValue(ctx, "method", r.Method)
+        logger.AddContextValue(ctx, "path", r.URL.Path)
+        logger.AddContextValue(ctx, "user_agent", r.UserAgent())
+        logger.AddContextValue(ctx, "remote_addr", r.RemoteAddr)
+
+        start := time.Now()
+
+        // リクエスト処理
+        next.ServeHTTP(w, r.WithContext(ctx))
+
+        // 処理時間をコンテキストに追加
+        logger.AddContextValue(ctx, "elapsed_ms", time.Since(start).Milliseconds())
+
+        // ログエントリがなくてもリクエストの記録を出力
+        // FlushEmpty=trueにより、コンテキスト情報が確実に記録される
+        logger.FlushContext(ctx)
+    })
+}
+```
+
+#### メリット
+
+1. **リクエストトレーシング**: すべてのHTTPリクエストを記録
+2. **デバッグ支援**: 処理が実行されたことを確認
+3. **メトリクス収集**: アクセス数や処理時間の統計取得
+4. **監査ログ**: セキュリティやコンプライアンス要件への対応
+
+#### 使い分けの指針
+
+- **FlushEmpty=true（推奨）**: HTTPリクエストログ、バッチ処理、トレーサビリティが重要な用途
+- **FlushEmpty=false**: メモリ効率を重視し、ログエントリがない場合は記録不要な用途
 
 ## 📚 サンプルコード
 
