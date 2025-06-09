@@ -9,11 +9,11 @@ import (
 
 func main() {
 	// Initialize logger with prettify enabled
-	logger.Init(logger.Config{
-		MinLevel:     logger.DebugLevel,
-		Output:       nil, // Use default (stdout)
-		PrettifyJSON: true,
-	})
+	logger.Init(
+		logger.WithMinLevel(logger.DebugLevel),
+		// Output defaults to stdout when not specified
+		logger.WithPrettifyJSON(true),
+	)
 
 	fmt.Println("=== Basic Usage with logger.D (Recommended) ===")
 	demonstrateBasicUsage()

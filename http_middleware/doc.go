@@ -23,8 +23,8 @@
 //	)
 //
 //	func main() {
-//	    // Initialize logger
-//	    logger.Init(logger.DefaultConfig())
+//	    // Initialize logger with default options
+//	    logger.Init()
 //
 //	    // Your HTTP handler
 //	    handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -210,13 +210,11 @@ func TestContextLogger_AutoFlushOnMaxEntries(t *testing.T) {
 	// Save original config
 	originalConfig := GetConfig()
 	defer func() {
-		Init(originalConfig)
+		restoreConfig(originalConfig)
 	}()
 
 	// Set up config with small max entries for testing
-	testConfig := DefaultConfig()
-	testConfig.MaxLogEntries = 3
-	Init(testConfig)
+	Init(WithMaxLogEntries(3))
 
 	var buf bytes.Buffer
 	logger := NewContextLogger()
@@ -291,13 +289,11 @@ func TestContextLogger_NoAutoFlushWhenMaxEntriesZero(t *testing.T) {
 	// Save original config
 	originalConfig := GetConfig()
 	defer func() {
-		Init(originalConfig)
+		restoreConfig(originalConfig)
 	}()
 
 	// Set up config with MaxLogEntries = 0 (no limit)
-	testConfig := DefaultConfig()
-	testConfig.MaxLogEntries = 0
-	Init(testConfig)
+	Init(WithMaxLogEntries(0))
 
 	var buf bytes.Buffer
 	logger := NewContextLogger()
@@ -333,13 +329,11 @@ func TestContextLogger_AutoFlushWithLevelFiltering(t *testing.T) {
 	// Save original config
 	originalConfig := GetConfig()
 	defer func() {
-		Init(originalConfig)
+		restoreConfig(originalConfig)
 	}()
 
 	// Set up config with small max entries for testing
-	testConfig := DefaultConfig()
-	testConfig.MaxLogEntries = 2
-	Init(testConfig)
+	Init(WithMaxLogEntries(2))
 
 	var buf bytes.Buffer
 	logger := NewContextLogger()

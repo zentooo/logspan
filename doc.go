@@ -39,12 +39,12 @@
 //	)
 //
 //	func main() {
-//	    // Initialize logger
-//	    logger.Init(logger.Config{
-//	        MinLevel:     logger.InfoLevel,
-//	        Output:       os.Stdout,
-//	        PrettifyJSON: true,
-//	    })
+//	    // Initialize logger with functional options
+//	    logger.Init(
+//	        logger.WithMinLevel(logger.InfoLevel),
+//	        logger.WithOutput(os.Stdout),
+//	        logger.WithPrettifyJSON(true),
+//	    )
 //
 //	    // Direct logging
 //	    logger.D.Infof("Application started")
@@ -171,16 +171,16 @@
 //
 // The library provides flexible configuration options:
 //
-//	config := logger.Config{
-//	    MinLevel:         logger.InfoLevel,    // Filter log levels
-//	    Output:           os.Stdout,           // Output destination
-//	    EnableSourceInfo: true,                // Include source file info
-//	    PrettifyJSON:     true,                // Pretty-print JSON
-//	    MaxLogEntries:    1000,                // Auto-flush threshold
-//	    LogType:          "request",           // Custom log type
-//	    ErrorHandler:     logger.NewDefaultErrorHandler(), // Error handler
-//	}
-//	logger.Init(config)
+//	// Configuration with functional options
+//	logger.Init(
+//	    logger.WithMinLevel(logger.InfoLevel),         // Filter log levels
+//	    logger.WithOutput(os.Stdout),                  // Output destination
+//	    logger.WithSourceInfo(true),                   // Include source file info
+//	    logger.WithPrettifyJSON(true),                 // Pretty-print JSON
+//	    logger.WithMaxLogEntries(1000),                // Auto-flush threshold
+//	    logger.WithLogType("request"),                 // Custom log type
+//	    logger.WithErrorHandler(logger.NewDefaultErrorHandler()), // Error handler
+//	)
 //
 // # Memory Optimization
 //
@@ -190,10 +190,10 @@
 //
 // Configure auto-flush to control memory usage:
 //
-//	// Configure auto-flush
-//	logger.Init(logger.Config{
-//	    MaxLogEntries: 100, // Auto-flush every 100 entries
-//	})
+//	// Configure auto-flush with functional options
+//	logger.Init(
+//	    logger.WithMaxLogEntries(100), // Auto-flush every 100 entries
+//	)
 //
 //	ctx := context.Background()
 //	contextLogger := logger.NewContextLogger()

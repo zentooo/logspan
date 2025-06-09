@@ -8,7 +8,7 @@ import (
 	"github.com/zentooo/logspan/formatter"
 )
 
-// Config holds the configuration for the logger
+// Config holds the configuration for the logger (internal use)
 type Config struct {
 	// MinLevel is the minimum log level for filtering
 	MinLevel LogLevel
@@ -34,8 +34,61 @@ type Config struct {
 	ErrorHandler ErrorHandler
 }
 
-// DefaultConfig returns a default configuration
-func DefaultConfig() Config {
+// Option is a function that configures the logger
+type Option func(*Config)
+
+// WithMinLevel sets the minimum log level for filtering
+func WithMinLevel(level LogLevel) Option {
+	return func(c *Config) {
+		c.MinLevel = level
+	}
+}
+
+// WithOutput sets the output destination for logs
+func WithOutput(output io.Writer) Option {
+	return func(c *Config) {
+		c.Output = output
+	}
+}
+
+// WithSourceInfo enables or disables source file information in log entries
+func WithSourceInfo(enabled bool) Option {
+	return func(c *Config) {
+		c.EnableSourceInfo = enabled
+	}
+}
+
+// WithPrettifyJSON enables or disables pretty-printed JSON output
+func WithPrettifyJSON(enabled bool) Option {
+	return func(c *Config) {
+		c.PrettifyJSON = enabled
+	}
+}
+
+// WithMaxLogEntries sets the maximum number of log entries before auto-flush
+// 0 means no limit (manual flush only)
+func WithMaxLogEntries(count int) Option {
+	return func(c *Config) {
+		c.MaxLogEntries = count
+	}
+}
+
+// WithLogType sets the type field value in log output
+func WithLogType(logType string) Option {
+	return func(c *Config) {
+		c.LogType = logType
+	}
+}
+
+// WithErrorHandler sets the error handler for logger errors
+func WithErrorHandler(handler ErrorHandler) Option {
+	return func(c *Config) {
+		c.ErrorHandler = handler
+	}
+}
+
+// defaultConfig returns a default configuration
+func defaultConfig() Config {
 	return Config{
 		MinLevel:         InfoLevel,
 		Output:           os.Stdout,
@@ -54,10 +107,18 @@ var (
 	initialized  bool
 )
 
-// Init initializes the global logger configuration
-func Init(config Config) {
+// Init initializes the global logger configuration with functional options
+func Init(options ...Option) {
 	configMutex.Lock()
 	defer configMutex.Unlock()
+
+	// Start with default config
+	config := defaultConfig()
+
+	// Apply all options
+	for _, option := range options {
+		option(&config)
+	}
 
 	globalConfig = config
 	initialized = true
@@ -90,7 +151,7 @@ func GetConfig() Config {
 	defer configMutex.RUnlock()
 
 	if !initialized {
-		return DefaultConfig()
+		return defaultConfig()
 	}
 
 	return globalConfig

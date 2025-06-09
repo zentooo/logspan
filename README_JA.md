@@ -131,15 +131,15 @@ func processRequest(ctx context.Context) {
 import "github.com/zentooo/logspan/logger"
 
 func init() {
-    config := logger.Config{
-        MinLevel:         logger.DebugLevel,
-        Output:           os.Stdout,
-        EnableSourceInfo: true,  // ソース情報（関数名、ファイル名、行番号）を有効化
-        PrettifyJSON:     true,  // 読みやすいJSON形式で出力
-        MaxLogEntries:    1000,  // 1000エントリで自動フラッシュ
-        LogType:          "batch_job", // カスタムログタイプ（デフォルト: "request"）
-    }
-    logger.Init(config)
+    // 関数オプションパターンで初期化
+    logger.Init(
+        logger.WithMinLevel(logger.DebugLevel),
+        logger.WithOutput(os.Stdout),
+        logger.WithSourceInfo(true),                       // ソース情報（関数名、ファイル名、行番号）を有効化
+        logger.WithPrettifyJSON(true),                     // 読みやすいJSON形式で出力
+        logger.WithMaxLogEntries(1000),                    // 1000エントリで自動フラッシュ
+        logger.WithLogType("batch_job"),                   // カスタムログタイプ（デフォルト: "request"）
+    )
 }
 ```
 
@@ -149,24 +149,24 @@ LogSpanでは、ログ出力の`type`フィールドをカスタマイズでき�
 
 ```go
 // バッチ処理用の設定
-logger.Init(logger.Config{
-    LogType: "batch_job",
-})
+logger.Init(
+    logger.WithLogType("batch_job"),
+)
 
 // API操作用の設定
-logger.Init(logger.Config{
-    LogType: "api_operation",
-})
+logger.Init(
+    logger.WithLogType("api_operation"),
+)
 
 // バックグラウンドタスク用の設定
-logger.Init(logger.Config{
-    LogType: "background_task",
-})
+logger.Init(
+    logger.WithLogType("background_task"),
+)
 
 // データ処理用の設定
-logger.Init(logger.Config{
-    LogType: "data_processing",
-})
+logger.Init(
+    logger.WithLogType("data_processing"),
+)
 ```
 
 ##### 一般的なログタイプの例
@@ -230,12 +230,11 @@ LogSpanは、デバッグやトラブルシューティングを支援するた�
 
 ```go
 // グローバル設定でソース情報を有効化
-config := logger.Config{
-    MinLevel:         logger.DebugLevel,
-    EnableSourceInfo: true,  // ソース情報を有効化
-    Output:           os.Stdout,
-}
-logger.Init(config)
+logger.Init(
+    logger.WithMinLevel(logger.DebugLevel),
+    logger.WithSourceInfo(true),                           // ソース情報を有効化
+    logger.WithOutput(os.Stdout),
+)
 
 // ログ出力時に自動的にソース情報が追加される
 logger.D.Infof("アプリケーションが開始されました")
@@ -305,12 +304,11 @@ func validateUser(ctx context.Context, userID string) {
 
 ```go
 // 本番環境での設定例
-config := logger.Config{
-    MinLevel:         logger.InfoLevel,
-    EnableSourceInfo: false,  // 本番環境では無効化
-    Output:           logFile,
-}
-logger.Init(config)
+logger.Init(
+    logger.WithMinLevel(logger.InfoLevel),
+    logger.WithSourceInfo(false),                          // 本番環境では無効化
+    logger.WithOutput(logFile),
+)
 ```
 
 #### デバッグ時の活用
@@ -324,13 +322,12 @@ logger.Init(config)
 
 ```go
 // 開発環境での設定例
-config := logger.Config{
-    MinLevel:         logger.DebugLevel,
-    EnableSourceInfo: true,   // 開発時は有効化
-    PrettifyJSON:     true,   // 読みやすい形式で出力
-    Output:           os.Stdout,
-}
-logger.Init(config)
+logger.Init(
+    logger.WithMinLevel(logger.DebugLevel),
+    logger.WithSourceInfo(true),                           // 開発時は有効化
+    logger.WithPrettifyJSON(true),                         // 読みやすい形式で出力
+    logger.WithOutput(os.Stdout),
+)
 ```
 
 ### 4. コンテキスト操作
@@ -614,37 +611,37 @@ config := logger.DefaultConfig()
 
 ```go
 // 開発環境向け設定（整形されたJSON出力）
-logger.Init(logger.Config{
-    MinLevel:         logger.DebugLevel,
-    Output:           os.Stdout,
-    EnableSourceInfo: true,
-    PrettifyJSON:     true,  // 読みやすい整形されたJSON
-    MaxLogEntries:    500,   // 500エントリで自動フラッシュ
-})
+logger.Init(
+    logger.WithMinLevel(logger.DebugLevel),
+    logger.WithOutput(os.Stdout),
+    logger.WithSourceInfo(true),
+    logger.WithPrettifyJSON(true),                         // 読みやすい整形されたJSON
+    logger.WithMaxLogEntries(500),                         // 500エントリで自動フラッシュ
+)
 
 // 本番環境向け設定（コンパクトなJSON出力）
-logger.Init(logger.Config{
-    MinLevel:         logger.InfoLevel,
-    Output:           logFile,
-    EnableSourceInfo: false,
-    PrettifyJSON:     false,  // コンパクトなJSON
-    MaxLogEntries:    1000,   // 1000エントリで自動フラッシュ
-})
+logger.Init(
+    logger.WithMinLevel(logger.InfoLevel),
+    logger.WithOutput(logFile),
+    logger.WithSourceInfo(false),
+    logger.WithPrettifyJSON(false),                        // コンパクトなJSON
+    logger.WithMaxLogEntries(1000),                        // 1000エントリで自動フラッシュ
+)
 
 // メモリ効率重視設定
-logger.Init(logger.Config{
-    MinLevel:      logger.InfoLevel,
-    Output:        logFile,
-    PrettifyJSON:  false,
-    MaxLogEntries: 100,  // 頻繁な自動フラッシュでメモリ使用量を抑制
-})
+logger.Init(
+    logger.WithMinLevel(logger.InfoLevel),
+    logger.WithOutput(logFile),
+    logger.WithPrettifyJSON(false),
+    logger.WithMaxLogEntries(100),                         // 頻繁な自動フラッシュでメモリ使用量を抑制
+)
 
 // 制限なし設定（手動フラッシュのみ）
-logger.Init(logger.Config{
-    MinLevel:      logger.InfoLevel,
-    Output:        logFile,
-    MaxLogEntries: 0,  // 自動フラッシュを無効化
-})
+logger.Init(
+    logger.WithMinLevel(logger.InfoLevel),
+    logger.WithOutput(logFile),
+    logger.WithMaxLogEntries(0),                           // 自動フラッシュを無効化
+)
 ```
 
 ### 設定の確認
@@ -669,9 +666,9 @@ LogSpanは、メモリ使用量を制御するための自動フラッシュ機�
 
 ```go
 // 自動フラッシュの設定
-logger.Init(logger.Config{
-    MaxLogEntries: 100, // 100エントリで自動フラッシュ
-})
+logger.Init(
+    logger.WithMaxLogEntries(100), // 100エントリで自動フラッシュ
+)
 
 ctx := context.Background()
 contextLogger := logger.NewContextLogger()
@@ -700,11 +697,11 @@ logger.FlushContext(ctx) // 残りのエントリを出力
 
 ```go
 // 大量ログ処理での設定例
-logger.Init(logger.Config{
-    MinLevel:      logger.InfoLevel,
-    MaxLogEntries: 50,    // 小さなバッチサイズ
-    PrettifyJSON:  false, // コンパクト出力
-})
+logger.Init(
+    logger.WithMinLevel(logger.InfoLevel),
+    logger.WithMaxLogEntries(50),                          // 小さなバッチサイズ
+    logger.WithPrettifyJSON(false),                        // コンパクト出力
+)
 
 ctx := context.Background()
 contextLogger := logger.NewContextLogger()
@@ -730,9 +727,9 @@ logger.FlushContext(ctx) // 最後の残りエントリを出力
 
 ```go
 // 自動フラッシュを無効にする（従来の動作）
-logger.Init(logger.Config{
-    MaxLogEntries: 0, // 0 = 制限なし
-})
+logger.Init(
+    logger.WithMaxLogEntries(0), // 0 = 制限なし
+)
 
 // この場合、手動でFlushContext()を呼ぶまでエントリが蓄積される
 ```

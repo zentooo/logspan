@@ -15,12 +15,12 @@ func main() {
 	fmt.Println()
 
 	// Initialize logger with basic configuration
-	logger.Init(logger.Config{
-		MinLevel:      logger.DebugLevel,
-		Output:        os.Stdout,
-		PrettifyJSON:  true,
-		MaxLogEntries: 0, // No auto-flush for this example
-	})
+	logger.Init(
+		logger.WithMinLevel(logger.DebugLevel),
+		logger.WithOutput(os.Stdout),
+		logger.WithPrettifyJSON(true),
+		logger.WithMaxLogEntries(0), // No auto-flush for this example
+	)
 
 	// Create password masking middleware with default settings
 	passwordMasker := logger.NewPasswordMaskingMiddleware()
