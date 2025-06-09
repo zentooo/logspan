@@ -9,7 +9,7 @@ import (
 
 func main() {
 	// Example 1: Default log type (request)
-	logger.Init(logger.DefaultConfig())
+	logger.Init() // Use default options
 
 	ctx := context.Background()
 	contextLogger := logger.NewContextLogger()
@@ -20,15 +20,14 @@ func main() {
 	logger.FlushContext(ctx)
 
 	// Example 2: Custom log type for batch processing
-	logger.Init(logger.Config{
-		MinLevel:         logger.InfoLevel,
-		Output:           os.Stdout,
-		EnableSourceInfo: false,
-		PrettifyJSON:     true,
-		MaxLogEntries:    0,
-		LogType:          "batch_job",
-		ErrorHandler:     nil,
-	})
+	logger.Init(
+		logger.WithMinLevel(logger.InfoLevel),
+		logger.WithOutput(os.Stdout),
+		logger.WithSourceInfo(false),
+		logger.WithPrettifyJSON(true),
+		logger.WithMaxLogEntries(0),
+		logger.WithLogType("batch_job"),
+	)
 
 	ctx2 := context.Background()
 	contextLogger2 := logger.NewContextLogger()
@@ -42,15 +41,14 @@ func main() {
 	logger.FlushContext(ctx2)
 
 	// Example 3: Custom log type for API operations
-	logger.Init(logger.Config{
-		MinLevel:         logger.InfoLevel,
-		Output:           os.Stdout,
-		EnableSourceInfo: false,
-		PrettifyJSON:     true,
-		MaxLogEntries:    0,
-		LogType:          "api_operation",
-		ErrorHandler:     nil,
-	})
+	logger.Init(
+		logger.WithMinLevel(logger.InfoLevel),
+		logger.WithOutput(os.Stdout),
+		logger.WithSourceInfo(false),
+		logger.WithPrettifyJSON(true),
+		logger.WithMaxLogEntries(0),
+		logger.WithLogType("api_operation"),
+	)
 
 	ctx3 := context.Background()
 	contextLogger3 := logger.NewContextLogger()

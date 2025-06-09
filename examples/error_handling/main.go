@@ -46,7 +46,7 @@ func demonstrateDefaultErrorHandler() {
 	fmt.Println("Using default error handler (outputs to stderr)...")
 
 	// Initialize logger with default configuration
-	logger.Init(logger.DefaultConfig())
+	logger.Init() // Use default options
 
 	// Create a logger with invalid output to trigger errors
 	directLogger := logger.NewDirectLogger()

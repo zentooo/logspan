@@ -88,12 +88,12 @@ import (
 )
 
 func main() {
-    // Initialize logger
-    logger.Init(logger.Config{
-        MinLevel:     logger.InfoLevel,
-        Output:       os.Stdout,
-        PrettifyJSON: true,
-    })
+    // Initialize logger with functional options
+    logger.Init(
+        logger.WithMinLevel(logger.InfoLevel),
+        logger.WithOutput(os.Stdout),
+        logger.WithPrettifyJSON(true),
+    )
 
     // Direct logging
     logger.D.Infof("Application started")
@@ -133,12 +133,12 @@ func processRequest(ctx context.Context) {
 import "github.com/zentooo/logspan/logger"
 
 func init() {
-    config := logger.Config{
-        MinLevel:         logger.DebugLevel,
-        Output:           os.Stdout,
-        EnableSourceInfo: true,
-    }
-    logger.Init(config)
+    // Initialize with functional options
+    logger.Init(
+        logger.WithMinLevel(logger.DebugLevel),
+        logger.WithOutput(os.Stdout),
+        logger.WithSourceInfo(true),
+    )
 }
 ```
 
@@ -417,87 +417,91 @@ formatter.NewContextFlattenFormatterWithIndent("  ")  // Pretty-printed context-
 
 ## 🔧 Configuration Options
 
-### Config Structure
+### Functional Options
+
+LogSpan uses the functional options pattern for flexible configuration:
 
 ```go
-type Config struct {
-    // Minimum log level
-    MinLevel LogLevel
+// Available configuration options
+logger.Init(
+    logger.WithMinLevel(logger.InfoLevel),        // Set minimum log level
+    logger.WithOutput(os.Stdout),                 // Set output destination
+    logger.WithSourceInfo(true),                  // Enable source file information
+    logger.WithPrettifyJSON(true),                // Enable JSON pretty-printing
+    logger.WithMaxLogEntries(1000),               // Set auto-flush threshold (0 = no limit)
+    logger.WithLogType("request"),                // Set log type field value
+    logger.WithErrorHandler(errorHandler),        // Set error handler
+)
 
-    // Output destination
-    Output io.Writer
-
-    // Enable source file information
-    EnableSourceInfo bool
-
-    // Enable JSON output formatting (indentation)
-    PrettifyJSON bool
-
-    // Maximum entries for context logger (0 = no limit)
-    MaxLogEntries int
-
-    // Type field value in log output (default: "request")
-    LogType string
-
-    // Error handler for logger errors (nil = use global)
-    ErrorHandler ErrorHandler
-}
+// Individual option functions
+logger.WithMinLevel(level LogLevel)           // Minimum log level for filtering
+logger.WithOutput(output io.Writer)           // Output destination
+logger.WithSourceInfo(enabled bool)           // Enable/disable source file information
+logger.WithPrettifyJSON(enabled bool)         // Enable/disable JSON pretty-printing
+logger.WithMaxLogEntries(count int)           // Auto-flush threshold (0 = no limit)
+logger.WithLogType(logType string)            // Log type field value
+logger.WithErrorHandler(handler ErrorHandler) // Error handler for logger errors
 ```
 
 ### Default Configuration
 
 ```go
-config := logger.DefaultConfig()
-// MinLevel: InfoLevel
-// Output: os.Stdout
-// EnableSourceInfo: false
-// PrettifyJSON: false
-// MaxLogEntries: 0 (no auto-flush by default)
-// LogType: "request"
-// ErrorHandler: nil (use global)
+// Default initialization (no options provided)
+logger.Init()
+
+// Equivalent to:
+logger.Init(
+    logger.WithMinLevel(logger.InfoLevel),         // Default log level
+    logger.WithOutput(os.Stdout),                  // Default output to stdout
+    logger.WithSourceInfo(false),                  // Source info disabled by default
+    logger.WithPrettifyJSON(false),                // Compact JSON by default
+    logger.WithMaxLogEntries(0),                   // No auto-flush by default
+    logger.WithLogType("request"),                 // Default log type
+    logger.WithErrorHandler(nil),                  // Use global error handler
+)
 ```
 
 ### Custom Configuration Examples
 
 ```go
 // Development environment configuration (formatted JSON output)
-logger.Init(logger.Config{
-    MinLevel:         logger.DebugLevel,
-    Output:           os.Stdout,
-    EnableSourceInfo: true,
-    PrettifyJSON:     true,  // Pretty-formatted JSON for readability
-    MaxLogEntries:    500,   // Auto-flush every 500 entries
-    LogType:          "development", // Custom log type
-    ErrorHandler:     logger.NewDefaultErrorHandler(), // Custom error handler
-})
+logger.Init(
+    logger.WithMinLevel(logger.DebugLevel),
+    logger.WithOutput(os.Stdout),
+    logger.WithSourceInfo(true),
+    logger.WithPrettifyJSON(true),                 // Pretty-formatted JSON for readability
+    logger.WithMaxLogEntries(500),                 // Auto-flush every 500 entries
+    logger.WithLogType("development"),             // Custom log type
+    logger.WithErrorHandler(logger.NewDefaultErrorHandler()), // Custom error handler
+)
 
 // Production environment configuration (compact JSON output)
-logger.Init(logger.Config{
-    MinLevel:         logger.InfoLevel,
-    Output:           logFile,
-    EnableSourceInfo: false,
-    PrettifyJSON:     false,  // Compact JSON
-    MaxLogEntries:    1000,   // Auto-flush every 1000 entries
-    LogType:          "production",
-    ErrorHandler:     logger.NewDefaultErrorHandlerWithOutput(errorLogFile),
-})
+logger.Init(
+    logger.WithMinLevel(logger.InfoLevel),
+    logger.WithOutput(logFile),
+    logger.WithSourceInfo(false),
+    logger.WithPrettifyJSON(false),                // Compact JSON
+    logger.WithMaxLogEntries(1000),                // Auto-flush every 1000 entries
+    logger.WithLogType("production"),
+    logger.WithErrorHandler(logger.NewDefaultErrorHandlerWithOutput(errorLogFile)),
+)
 
 // Memory-efficient configuration
-logger.Init(logger.Config{
-    MinLevel:      logger.InfoLevel,
-    Output:        logFile,
-    PrettifyJSON:  false,
-    MaxLogEntries: 100,  // Frequent auto-flush to reduce memory usage
-    LogType:       "batch_processing",
-})
+logger.Init(
+    logger.WithMinLevel(logger.InfoLevel),
+    logger.WithOutput(logFile),
+    logger.WithPrettifyJSON(false),
+    logger.WithMaxLogEntries(100),                 // Frequent auto-flush to reduce memory usage
+    logger.WithLogType("batch_processing"),
+)
 
 // No limit configuration (manual flush only)
-logger.Init(logger.Config{
-    MinLevel:      logger.InfoLevel,
-    Output:        logFile,
-    MaxLogEntries: 0,  // Disable auto-flush
-    ErrorHandler:  &logger.SilentErrorHandler{}, // Silent error handling
-})
+logger.Init(
+    logger.WithMinLevel(logger.InfoLevel),
+    logger.WithOutput(logFile),
+    logger.WithMaxLogEntries(0),                   // Disable auto-flush
+    logger.WithErrorHandler(&logger.SilentErrorHandler{}), // Silent error handling
+)
 ```
 
 ### Configuration Verification
@@ -560,9 +564,9 @@ LogSpan provides an auto-flush feature to control memory usage:
 
 ```go
 // Configure auto-flush
-logger.Init(logger.Config{
-    MaxLogEntries: 100, // Auto-flush every 100 entries
-})
+logger.Init(
+    logger.WithMaxLogEntries(100), // Auto-flush every 100 entries
+)
 
 ctx := context.Background()
 contextLogger := logger.NewContextLogger()
@@ -606,11 +610,11 @@ fmt.Printf("Slice Pool Size: %d\n", stats.SlicePoolSize)
 
 ```go
 // Configuration for large-scale log processing
-logger.Init(logger.Config{
-    MinLevel:      logger.InfoLevel,
-    MaxLogEntries: 50,    // Small batch size
-    PrettifyJSON:  false, // Compact output
-})
+logger.Init(
+    logger.WithMinLevel(logger.InfoLevel),
+    logger.WithMaxLogEntries(50),                  // Small batch size
+    logger.WithPrettifyJSON(false),                // Compact output
+)
 
 ctx := context.Background()
 contextLogger := logger.NewContextLogger()
@@ -636,9 +640,9 @@ logger.FlushContext(ctx) // Output final remaining entries
 
 ```go
 // Disable auto-flush (traditional behavior)
-logger.Init(logger.Config{
-    MaxLogEntries: 0, // 0 = no limit
-})
+logger.Init(
+    logger.WithMaxLogEntries(0), // 0 = no limit
+)
 
 // In this case, entries accumulate until manual FlushContext() call
 ```

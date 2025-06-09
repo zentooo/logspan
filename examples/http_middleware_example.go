@@ -11,11 +11,11 @@ import (
 
 func main() {
 	// Initialize logger with prettify enabled
-	logger.Init(logger.Config{
-		MinLevel:     logger.DebugLevel,
-		Output:       nil, // Use default (stdout)
-		PrettifyJSON: true,
-	})
+	logger.Init(
+		logger.WithMinLevel(logger.DebugLevel),
+		// Output defaults to stdout when not specified
+		logger.WithPrettifyJSON(true),
+	)
 
 	// Create a simple HTTP handler
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

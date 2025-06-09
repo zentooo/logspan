@@ -11,11 +11,11 @@ func main() {
 	fmt.Println("=== Context Logger Example ===")
 
 	// Initialize logger with prettify enabled
-	logger.Init(logger.Config{
-		MinLevel:     logger.DebugLevel,
-		Output:       nil, // Use default (stdout)
-		PrettifyJSON: true,
-	})
+	logger.Init(
+		logger.WithMinLevel(logger.DebugLevel),
+		// Output defaults to stdout when not specified
+		logger.WithPrettifyJSON(true),
+	)
 
 	// Create a context with a logger
 	ctx := context.Background()

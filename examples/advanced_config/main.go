@@ -34,14 +34,14 @@ func main() {
 func demonstrateBasicConfig() {
 	fmt.Println("1. Basic Configuration with Different Log Levels:")
 
-	// Configure with INFO level
-	logger.Init(logger.Config{
-		MinLevel:         logger.InfoLevel,
-		Output:           os.Stdout,
-		EnableSourceInfo: true,
-		PrettifyJSON:     true,
-		MaxLogEntries:    0,
-	})
+	// Configure with INFO level using functional options
+	logger.Init(
+		logger.WithMinLevel(logger.InfoLevel),
+		logger.WithOutput(os.Stdout),
+		logger.WithSourceInfo(true),
+		logger.WithPrettifyJSON(true),
+		logger.WithMaxLogEntries(0),
+	)
 
 	ctx := context.Background()
 	contextLogger := logger.NewContextLogger()
@@ -72,13 +72,13 @@ func demonstrateCustomOutput() {
 	defer os.Remove(logFile.Name())
 	defer logFile.Close()
 
-	// Configure to write to file
-	logger.Init(logger.Config{
-		MinLevel:      logger.DebugLevel,
-		Output:        logFile,
-		PrettifyJSON:  false, // Compact JSON for file output
-		MaxLogEntries: 0,
-	})
+	// Configure to write to file using functional options
+	logger.Init(
+		logger.WithMinLevel(logger.DebugLevel),
+		logger.WithOutput(logFile),
+		logger.WithPrettifyJSON(false), // Compact JSON for file output
+		logger.WithMaxLogEntries(0),
+	)
 
 	ctx := context.Background()
 	contextLogger := logger.NewContextLogger()
@@ -98,24 +98,24 @@ func demonstrateCustomOutput() {
 	n, _ := logFile.Read(content)
 	fmt.Printf("File contents:\n%s\n", string(content[:n]))
 
-	// Reset to stdout for other examples
-	logger.Init(logger.Config{
-		MinLevel:     logger.DebugLevel,
-		Output:       os.Stdout,
-		PrettifyJSON: true,
-	})
+	// Reset to stdout for other examples using functional options
+	logger.Init(
+		logger.WithMinLevel(logger.DebugLevel),
+		logger.WithOutput(os.Stdout),
+		logger.WithPrettifyJSON(true),
+	)
 }
 
 func demonstrateAutoFlushConfig() {
 	fmt.Println("3. Auto-Flush Configuration:")
 
-	// Configure with small MaxLogEntries for demonstration
-	logger.Init(logger.Config{
-		MinLevel:      logger.DebugLevel,
-		Output:        os.Stdout,
-		PrettifyJSON:  true,
-		MaxLogEntries: 3, // Auto-flush after 3 entries
-	})
+	// Configure with small MaxLogEntries for demonstration using functional options
+	logger.Init(
+		logger.WithMinLevel(logger.DebugLevel),
+		logger.WithOutput(os.Stdout),
+		logger.WithPrettifyJSON(true),
+		logger.WithMaxLogEntries(3), // Auto-flush after 3 entries
+	)
 
 	ctx := context.Background()
 	contextLogger := logger.NewContextLogger()
@@ -143,12 +143,12 @@ func demonstrateAutoFlushConfig() {
 func demonstrateFormatterConfig() {
 	fmt.Println("4. Custom Formatter Configuration:")
 
-	// Reset to basic config
-	logger.Init(logger.Config{
-		MinLevel:     logger.InfoLevel,
-		Output:       os.Stdout,
-		PrettifyJSON: true,
-	})
+	// Reset to basic config using functional options
+	logger.Init(
+		logger.WithMinLevel(logger.InfoLevel),
+		logger.WithOutput(os.Stdout),
+		logger.WithPrettifyJSON(true),
+	)
 
 	// Create context logger with custom formatter
 	contextLogger := logger.NewContextLogger()

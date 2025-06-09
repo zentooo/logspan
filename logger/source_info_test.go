@@ -14,10 +14,10 @@ func TestSourceInfo_EnabledAndDisabled(t *testing.T) {
 		buf := &bytes.Buffer{}
 
 		// Configure with source info enabled
-		config := DefaultConfig()
-		config.EnableSourceInfo = true
-		config.Output = buf
-		Init(config)
+		Init(
+			WithSourceInfo(true),
+			WithOutput(buf),
+		)
 
 		// Test direct logger
 		D.Infof("test message")
@@ -71,10 +71,10 @@ func TestSourceInfo_EnabledAndDisabled(t *testing.T) {
 		buf := &bytes.Buffer{}
 
 		// Configure with source info disabled
-		config := DefaultConfig()
-		config.EnableSourceInfo = false
-		config.Output = buf
-		Init(config)
+		Init(
+			WithSourceInfo(false),
+			WithOutput(buf),
+		)
 
 		// Test direct logger
 		D.Infof("test message")
@@ -110,10 +110,10 @@ func TestSourceInfo_ContextLogger(t *testing.T) {
 	buf := &bytes.Buffer{}
 
 	// Configure with source info enabled
-	config := DefaultConfig()
-	config.EnableSourceInfo = true
-	config.Output = buf
-	Init(config)
+	Init(
+		WithSourceInfo(true),
+		WithOutput(buf),
+	)
 
 	// Test context logger
 	ctx := context.Background()
@@ -167,10 +167,10 @@ func TestSourceInfo_DirectContextLoggerCall(t *testing.T) {
 	buf := &bytes.Buffer{}
 
 	// Configure with source info enabled
-	config := DefaultConfig()
-	config.EnableSourceInfo = true
-	config.Output = buf
-	Init(config)
+	Init(
+		WithSourceInfo(true),
+		WithOutput(buf),
+	)
 
 	// Test direct context logger call (not through context.go functions)
 	contextLogger := NewContextLogger()

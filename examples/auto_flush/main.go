@@ -12,12 +12,12 @@ func main() {
 	fmt.Println("=== Auto-Flush Example ===")
 
 	// Initialize logger with small MaxLogEntries for demonstration
-	logger.Init(logger.Config{
-		MinLevel:      logger.DebugLevel,
-		Output:        nil, // Use default (stdout)
-		PrettifyJSON:  true,
-		MaxLogEntries: 3, // Auto-flush after 3 entries
-	})
+	logger.Init(
+		logger.WithMinLevel(logger.DebugLevel),
+		// Output defaults to stdout when not specified
+		logger.WithPrettifyJSON(true),
+		logger.WithMaxLogEntries(3), // Auto-flush after 3 entries
+	)
 
 	// Create a context with a logger
 	ctx := context.Background()

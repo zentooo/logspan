@@ -17,14 +17,14 @@
 //
 // # Basic Usage
 //
-// Initialize the logger with configuration:
+// Initialize the logger with functional options:
 //
-//	logger.Init(logger.Config{
-//	    MinLevel:      logger.InfoLevel,
-//	    Output:        os.Stdout,
-//	    PrettifyJSON:  true,
-//	    MaxLogEntries: 1000,
-//	})
+//	logger.Init(
+//	    logger.WithMinLevel(logger.InfoLevel),
+//	    logger.WithOutput(os.Stdout),
+//	    logger.WithPrettifyJSON(true),
+//	    logger.WithMaxLogEntries(1000),
+//	)
 //
 // # Context-based Logging
 //
@@ -107,9 +107,9 @@
 //
 // The context logger supports auto-flush to manage memory usage:
 //
-//	logger.Init(logger.Config{
-//	    MaxLogEntries: 100, // Auto-flush after 100 entries
-//	})
+//	logger.Init(
+//	    logger.WithMaxLogEntries(100), // Auto-flush after 100 entries
+//	)
 //
 // When the number of accumulated log entries reaches MaxLogEntries,
 // the logger automatically flushes the entries and continues accumulating new ones.

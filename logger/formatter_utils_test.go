@@ -3,7 +3,6 @@ package logger
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"testing"
 	"time"
 
@@ -12,9 +11,7 @@ import (
 
 func TestFormatterUtils_CreateDefaultFormatter(t *testing.T) {
 	// Test with PrettifyJSON = false
-	Init(Config{
-		PrettifyJSON: false,
-	})
+	Init(WithPrettifyJSON(false))
 
 	formatter := createDefaultFormatter()
 	if formatter == nil {
@@ -22,9 +19,7 @@ func TestFormatterUtils_CreateDefaultFormatter(t *testing.T) {
 	}
 
 	// Test with PrettifyJSON = true
-	Init(Config{
-		PrettifyJSON: true,
-	})
+	Init(WithPrettifyJSON(true))
 
 	formatterPretty := createDefaultFormatter()
 	if formatterPretty == nil {
@@ -288,17 +283,11 @@ func TestFormatterUtils_FormatLogOutput_LogType(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			customConfig := Config{
-				MinLevel:         InfoLevel,
-				Output:           os.Stdout,
-				EnableSourceInfo: false,
-				PrettifyJSON:     false,
-				MaxLogEntries:    0,
-				LogType:          tc.logType,
-				ErrorHandler:     nil,
+			if tc.logType == "" {
+				Init() // Use default (which sets logType to "request")
+			} else {
+				Init(WithLogType(tc.logType))
 			}
-
-			Init(customConfig)
 
 			entries := []*LogEntry{
 				{
@@ -327,6 +316,6 @@ func TestFormatterUtils_FormatLogOutput_LogType(t *testing.T) {
 
 	// Restore original state
 	if originalInitialized {
-		Init(originalConfig)
+		restoreConfig(originalConfig)
 	}
 }

@@ -9,33 +9,30 @@ alwaysApply: true
 
 ### Global Configuration
 ```go
-// Initialize global logger settings
-logger.Init(config Config)
+// Initialize global logger with functional options
+logger.Init(options ...Option)
 
-// Config structure
-type Config struct {
-    MinLevel         LogLevel     // Minimum log level for filtering
-    Output           io.Writer    // Output destination
-    EnableSourceInfo bool         // Enable source file information
-    PrettifyJSON     bool         // Enable pretty-printed JSON output
-    MaxLogEntries    int          // Maximum log entries before auto-flush (0 = no limit)
-    LogType          string       // Type field value in log output (default: "request")
-    ErrorHandler     ErrorHandler // Error handler for logger errors (nil = use global)
-}
+// Available option functions:
+logger.WithMinLevel(level LogLevel)           // Set minimum log level for filtering
+logger.WithOutput(output io.Writer)           // Set output destination
+logger.WithSourceInfo(enabled bool)           // Enable/disable source file information
+logger.WithPrettifyJSON(enabled bool)         // Enable/disable pretty-printed JSON output
+logger.WithMaxLogEntries(count int)           // Set auto-flush threshold (0 = no limit)
+logger.WithLogType(logType string)            // Set log type field value (default: "request")
+logger.WithErrorHandler(handler ErrorHandler) // Set error handler (nil = use global)
 
-// Default configuration
-config := logger.DefaultConfig()
-logger.Init(config)
+// Default configuration (no options)
+logger.Init()
 
-// Custom configuration
-logger.Init(logger.Config{
-    MinLevel:      logger.DebugLevel,
-    Output:        os.Stdout,
-    PrettifyJSON:  true,
-    MaxLogEntries: 1000, // Auto-flush after 1000 entries
-    LogType:       "batch", // Custom log type
-    ErrorHandler:  logger.NewDefaultErrorHandler(), // Custom error handler
-})
+// Custom configuration with options
+logger.Init(
+    logger.WithMinLevel(logger.DebugLevel),
+    logger.WithOutput(os.Stdout),
+    logger.WithPrettifyJSON(true),
+    logger.WithMaxLogEntries(1000), // Auto-flush after 1000 entries
+    logger.WithLogType("batch"),    // Custom log type
+    logger.WithErrorHandler(logger.NewDefaultErrorHandler()), // Custom error handler
+)
 ```
 
 ### Context Logger Setup
@@ -130,11 +127,11 @@ logger.SetGlobalErrorHandler(handler)
 // Get current global error handler
 currentHandler := logger.GetGlobalErrorHandler()
 
-// Configure error handler in Config
-logger.Init(logger.Config{
-    MinLevel:     logger.InfoLevel,
-    ErrorHandler: logger.NewDefaultErrorHandlerWithOutput(errorLogFile),
-})
+// Configure error handler with options
+logger.Init(
+    logger.WithMinLevel(logger.InfoLevel),
+    logger.WithErrorHandler(logger.NewDefaultErrorHandlerWithOutput(errorLogFile)),
+)
 ```
 
 ## Memory Optimization
@@ -142,14 +139,14 @@ logger.Init(logger.Config{
 ### Auto-Flush Configuration
 ```go
 // Configure auto-flush behavior
-logger.Init(logger.Config{
-    MaxLogEntries: 500, // Auto-flush after 500 entries
-})
+logger.Init(
+    logger.WithMaxLogEntries(500), // Auto-flush after 500 entries
+)
 
 // Disable auto-flush (unlimited entries until manual flush)
-logger.Init(logger.Config{
-    MaxLogEntries: 0, // 0 means no limit
-})
+logger.Init(
+    logger.WithMaxLogEntries(0), // 0 means no limit
+)
 ```
 
 ### Memory Pool Management
@@ -174,11 +171,11 @@ fmt.Printf("Slice Pool Size: %d\n", stats.SlicePoolSize)
 ### Example: Memory-Efficient Logging
 ```go
 // Configure for memory efficiency
-logger.Init(logger.Config{
-    MinLevel:      logger.InfoLevel,
-    MaxLogEntries: 100, // Small batch size for frequent flushing
-    PrettifyJSON:  false, // Compact output
-})
+logger.Init(
+    logger.WithMinLevel(logger.InfoLevel),
+    logger.WithMaxLogEntries(100), // Small batch size for frequent flushing
+    logger.WithPrettifyJSON(false), // Compact output
+)
 
 ctx := context.Background()
 contextLogger := logger.NewContextLogger()
