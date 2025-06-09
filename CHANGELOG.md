@@ -1,4 +1,9 @@
 # Changelog
+## v0.0.9 (2025-06-09)
+
+### Changes
+- Merge pull request #7 from zentooo/config_as_functional_options_pattern (abd8f23)
+- Refactor logger initialization to use functional options for configuration in doc.go, README files, and examples. This enhances flexibility and readability of logger setup. (edcdedc)
 ## v0.0.8 (2025-06-06)
 
 ### Changes
