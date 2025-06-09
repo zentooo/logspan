@@ -1,4 +1,9 @@
 # Changelog
+## v0.0.10 (2025-06-09)
+
+### Changes
+- Merge pull request #8 from zentooo/flush_empty_log (084f52f)
+- Add FlushEmpty feature to logger for flushing empty entries (1b0e1a6)
 ## v0.0.9 (2025-06-09)
 
 ### Changes
