@@ -1,4 +1,11 @@
 # Changelog
+## v0.0.11 (2025-06-09)
+
+### Changes
+- Merge branch 'main' of github.com:zentooo/logspan (78693f8)
+- add claude (301d22b)
+- Merge pull request #9 from zentooo/add-claude-github-actions-1749445841381 (7ad9007)
+- Add Claude PR Assistant workflow (763e214)
 ## v0.0.10 (2025-06-09)
 
 ### Changes
