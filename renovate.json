@@ -5,9 +5,13 @@
   ],
   "packageRules": [
     {
-      "matchDepTypes": ["action"],
-      "excludePackagePrefixes": ["actions/"],
-      "pinDigests": true
+      "matchDepTypes": [
+        "action"
+      ],
+      "pinDigests": true,
+      "matchPackageNames": [
+        "!actions/{/,}**"
+      ]
     }
   ]
 }
