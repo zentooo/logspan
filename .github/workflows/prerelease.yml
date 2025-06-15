@@ -3,6 +3,10 @@ name: Pre-release
 on:
   push:
     branches: [ develop ]
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
   workflow_dispatch:
     inputs:
       prerelease_type:

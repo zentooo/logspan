@@ -3,6 +3,10 @@ name: Release
 on:
   push:
     branches: [ main ]
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
   workflow_dispatch:
     inputs:
       version_type:
@@ -99,9 +103,17 @@ jobs:
         esac
 
         NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+
+        # Add prerelease suffix if requested
+        if [ "$IS_PRERELEASE" = "true" ]; then
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          NEW_VERSION="${NEW_VERSION}-rc.${TIMESTAMP}"
+        fi
+
         echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
         echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
-        echo "Next version: $NEW_VERSION (type: $VERSION_TYPE)"
+        echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+        echo "Next version: $NEW_VERSION (type: $VERSION_TYPE, prerelease: $IS_PRERELEASE)"
 
     - name: Check if version already exists
       id: check_version
